@@ -6,6 +6,7 @@ sys.path.append(f"{etrade_config.base_dir}/positions")
 from positions import Position
 sys.path.append(f"{etrade_config.base_dir}/transactions")
 from transactions import Transaction, BANNED_TRANSACTION_TYPE
+import pandas as pd
 #################### End Created Classes #####################
 
 def red_text(text):
@@ -13,6 +14,7 @@ def red_text(text):
 
 def green_text(text):
     return f'<mark style="color:green;">{text}</mark>'
+from pretty_html_table import build_table
 
 import babel.numbers
 import decimal
@@ -31,6 +33,9 @@ class SecurityHolding:
         self.market_value = 0
         self.associated_transactions = []
         self.associated_positions = []
+
+    def percent_gain(self):
+        return (self.market_value/(self.market_value-self.total_gain))-1
 
     def _balance_qty(self):
         self.can_sell_qty -= self.hold_qty()
@@ -78,6 +83,12 @@ class SecurityHolding:
                 return ret_str, self.total_gain * self.ratio(), self._can_sell(), self.hold_qty()
         return None
 
+    def can_sell_info(self):
+        ret_str = ""
+        for qty, purchase_date, sell_date, sell_days in self.hold_matrix():
+            if qty:
+                return self.total_gain * self.ratio(), self._can_sell(), sell_date.strftime('%m-%d-%Y'), sell_days.days
+
     def hold_qty(self) -> int:
         total_qty = 0
         for tx_qty, _, _, _ in self.hold_matrix():
@@ -112,6 +123,7 @@ class SecurityHoldings:
             holdingsItem.associated_positions.append(position)
             holdingsItem.can_sell_qty = position.qty
             holdingsItem.px = position.px_paid
+            holdingsItem.last_px = position.last_trade
             holdingsItem.total_gain = position.total_gain
             holdingsItem.market_value = position.market_value
             holdingsItem.pct_portfolio = position.pct_portfolio
@@ -205,4 +217,62 @@ class SecurityHoldings:
         pass
 
     def to_dataframe(self):
-        pass
+        sym = []
+        price = []
+        total_gain = []
+        total_gain_secret = []
+        must_hold = []
+        perc_portfolio = []
+        perc_gain = []
+        can_sell = []
+        can_sell_date = []
+        for holding in self.holdings.values():
+            sym.append(holding.sym)
+            price.append(format_currency(holding.last_px))
+            total_gain.append(format_currency(holding.total_gain))
+            must_hold.append(holding.hold_qty())
+            perc_portfolio.append(holding.pct_portfolio)
+            perc_gain.append(holding.percent_gain()*100)
+            can_sell.append(holding._can_sell())
+            total_gain_secret.append(holding.total_gain)
+            try:
+                _,_,date,days = holding.can_sell_info()
+            except Exception as e:
+                can_sell_date.append("N/A")
+            else:
+                can_sell_date.append(date)
+        to_df = {"SYMBOL": sym, "PRICE": price, "TOTAL GAIN": total_gain, "% GAIN": perc_gain, "MUST HOLD": must_hold,
+                  "CAN SELL": can_sell, "CAN SELL DATE": can_sell_date, "GAIN RANKING": total_gain_secret, "% PORTFOLIO": perc_portfolio}
+        df = pd.DataFrame(to_df)
+        df = df.sort_values(by=['GAIN RANKING'])
+        df = df.reset_index(drop=True)
+        return df
+
+    def hold_dataframe(self, html=False):
+        df = self.to_dataframe()
+        df = df.loc[df['CAN SELL DATE'] != 'N/A']
+        if not html:
+            return df
+        df = df.drop(columns=["GAIN RANKING"])
+        df = df.reset_index(drop=True)
+        return build_table(df, 'grey_light')
+
+    def can_sell_winners_dataframe(self, html=False):
+        df = self.to_dataframe()
+        df = df.loc[df['CAN SELL DATE'] == 'N/A']
+        df = df.loc[df['GAIN RANKING'] >= 0]
+        if not html:
+            return df
+        df = df.drop(columns=["GAIN RANKING"])
+        df = df.reset_index(drop=True)
+        return build_table(df, 'green_light')
+
+    def can_sell_losers_dataframe(self, html=False):
+        df = self.to_dataframe()
+        df = df.loc[df['CAN SELL DATE'] == 'N/A']
+        df = df.loc[df['GAIN RANKING'] <= 0]
+        if not html:
+            return df
+        df = df.drop(columns=["GAIN RANKING"])
+        df = df.reset_index(drop=True)
+        return build_table(df, 'red_light')

@@ -148,30 +148,30 @@ if __name__ == "__main__":
     sys.path.append(f"{etrade_config.base_dir}/order_security")
     from order_security import SecurityOrder, ETradeOrder
 
-    test = accounts.accounts[2]
-    print(test)
+    # test = accounts.accounts[2]
+    # print(accounts.accounts_holdings[test.accountId].to_dataframe())
     # order = SecurityOrder(session,test, base_url, accounts.accounts_holdings[test.accountId])
     # order.sell_from_holdings()
-    etrade_order = ETradeOrder(session, base_url, test.accountIdKey, accounts.accounts_holdings[test.accountId] )
+    # etrade_order = ETradeOrder(session, base_url, test.accountIdKey, accounts.accounts_holdings[test.accountId] )
     # etrade_order.sell_from_holdings()
-    etrade_order.preview_equity_order(
-        securityType="OPTN",
-        orderType="OPTN",
-        accountIdKey="zBRmF6b_gzE-mkO74Vbaag",
-        symbol="BAC",
-        orderAction="SELL_CLOSE",
-        clientOrderId="6591041807",
-        priceType="MARKET",
-        quantity=3,
-        callPut="CALL",
-        expiryDate=datetime.datetime(2023,4,21),
-        marketSession="REGULAR",
-        orderTerm= "GOOD_FOR_DAY",
-        strikePrice=30,
-        allOrNone=False,
-        stopPrice=0,
-        routingDestination='AUTO'
-    )
+    # etrade_order.preview_equity_order(
+    #     securityType="OPTN",
+    #     orderType="OPTN",
+    #     accountIdKey="zBRmF6b_gzE-mkO74Vbaag",
+    #     symbol="BAC",
+    #     orderAction="SELL_CLOSE",
+    #     clientOrderId="6591041807",
+    #     priceType="MARKET",
+    #     quantity=3,
+    #     callPut="CALL",
+    #     expiryDate=datetime.datetime(2023,4,21),
+    #     marketSession="REGULAR",
+    #     orderTerm= "GOOD_FOR_DAY",
+    #     strikePrice=30,
+    #     allOrNone=False,
+    #     stopPrice=0,
+    #     routingDestination='AUTO'
+    # )
     # etrade_order.preview_equity_order(
     #     securityType="EQ",
     #     orderType="EQ",
