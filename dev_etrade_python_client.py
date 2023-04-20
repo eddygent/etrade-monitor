@@ -18,6 +18,7 @@ import argparse
 from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
 from etrade_apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
+import etrade_apps.volatility
 
 import os
 base = os.getcwd()
@@ -141,18 +142,37 @@ def process_input(inp, session, base_url, accounts):
     elif inp.upper() == "E":
         exit()
 
+
+def email_volatility(vol_args):
+    vol, time_period, price = vol_args.split(",")
+    subj = f"Volatility & Price Scraper"
+    body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
+    vol_table,count,seconds = etrade_apps.volatility.volatility_scanner([],vol,time_period, price,to_csv=True,to_html=True)
+
+    body += f"Query Took {seconds} seconds across {count} symbol(s)."
+    body += vol_table
+
+    if send_email_with_data(body, subject=subj,receiver_email=['kori.s.vernon@gmail.com','sagaboy65@mac.com']):
+        print("Sent email")
+        return True
+    else:
+        print("Unable to send email.")
+        return False
+
+
+
+
 if __name__ == "__main__":
-    session, base_url = oauth()
-    accounts = load_accounts(session, base_url)
 
-    sys.path.append(f"{etrade_config.base_dir}/order_security")
-    from order_security import SecurityOrder, ETradeOrder
 
-    test = accounts.accounts[2]
+    # sys.path.append(f"{etrade_config.base_dir}/order_security")
+    # from order_security import SecurityOrder, ETradeOrder
+
+    # test = accounts.accounts[2]
     # print(accounts.accounts_holdings[test.accountId].to_dataframe())
     # order = SecurityOrder(session,test, base_url, accounts.accounts_holdings[test.accountId])
     # order.sell_from_holdings()
-    etrade_order = ETradeOrder(session, base_url, test.accountIdKey, accounts.accounts_holdings[test.accountId] )
+    # etrade_order = ETradeOrder(session, base_url, test.accountIdKey, accounts.accounts_holdings[test.accountId] )
     # etrade_order.sell_from_holdings()
     # etrade_order.preview_equity_order(
     #     securityType="OPTN",
@@ -193,8 +213,16 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
+    parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const=".3,3mo,150", nargs='?')
     
     args = parser.parse_args()
+    if args.Email or args.canSell or args.StayLive:
+        session, base_url = oauth()
+        accounts = load_accounts(session, base_url)
+
+    # Process User inputs
+    if args.volatilityScanner:
+        email_volatility(args.volatilityScanner)
     if args.Email:
         email(accounts)
     if args.canSell:
