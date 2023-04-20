@@ -21,8 +21,7 @@ def ticker_volatility_matrix_ranged_time(
     data['Log returns'] = np.log(data['Close'] / data['Close'].shift())
     data['Log returns'].std()
     volatility = data['Log returns'].std() * np.sqrt(time_period)
-    return [ticker, volatility, y.fast_info['lastPrice']]
-
+    return [ticker, volatility, y.fast_info['lastPrice'],data['Volume'].mean()]
 
 def ticker_volatility_matrix_with_time_period(ticker, time_period="3mo"):
     y = yf.Ticker(ticker)
@@ -31,7 +30,7 @@ def ticker_volatility_matrix_with_time_period(ticker, time_period="3mo"):
     data['Log returns'] = np.log(data['Close'] / data['Close'].shift())
     data['Log returns'].std()
     volatility = data['Log returns'].std() * np.sqrt(time_period)
-    return [ticker, volatility, y.fast_info['lastPrice']]
+    return [ticker, volatility, y.fast_info['lastPrice'],data['Volume'].mean()]
 
 def four_week_vol(ticker,date):
     '''date in format %Y-%m-%d'''
@@ -75,7 +74,7 @@ def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=No
     if vol_day_diff < 5:
         df = pd.read_csv(f'{DATA_PATH}/voldata/{vol_file}')
         df = df.reset_index(drop=True)
-        df = df[['Ticker', 'Volatility','LastPrice']]
+        df = df[['Ticker', 'Volatility','LastPrice','Volume']]
         count = df.shape[0]
     else:
         if symbols == []:
@@ -96,17 +95,19 @@ def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=No
                 print("Error with accessing ticker information for:", tick, ", omitting.")
             print(".", end="")
 
-        df = pd.DataFrame(vol_list, columns=['Ticker', 'Volatility', 'LastPrice'])
+        df = pd.DataFrame(vol_list, columns=['Ticker', 'Volatility', 'LastPrice','Volume'])
         if symbols == []: # only when we query for all symbols do we create baseline
             filename = f'volatility_scanner_result_{time_period}_baseline_{today}.csv'
             df.to_csv(f'{DATA_PATH}/voldata/{filename}')
     df = df[df["Volatility"] >= volatility]
     df = df[df['LastPrice'] >= price]
 
+    df = df.sort_values(by=['Volatility'])
+
     sp = ticker_volatility_matrix_with_time_period('SPY', time_period)
     if not (df['Ticker'].eq(sp[0])).any():  # Add S&P to the vol list matrix
         sp[0]= "SPY BASELINE"
-        spy_baseline = pd.DataFrame([sp], columns=['Ticker','Volatility','LastPrice'])
+        spy_baseline = pd.DataFrame([sp], columns=['Ticker','Volatility','LastPrice','Volume'])
         df = pd.concat([spy_baseline, df]).reset_index(drop=True)
 
     seconds = time.time() - seconds
@@ -115,6 +116,8 @@ def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=No
         df = df.reset_index(drop=True)
         filename = f'volatility_scanner_result_{time_period}{"_price_"+str(price)+"_" if price else ""}_{today}.csv'
         df.to_csv(f'{DATA_PATH}/voldata/{filename}')
+
+    df = df[df['Average Volume'] >= 20000000] # we want an average volume of at least 20,000,000
 
     if to_html:
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['Ticker']

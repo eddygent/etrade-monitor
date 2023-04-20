@@ -144,15 +144,18 @@ def process_input(inp, session, base_url, accounts):
 
 
 def email_volatility(vol_args):
-    vol, time_period, price = vol_args.split(",")
+    vol, time_period, price,emailwho = vol_args.split(",")
     subj = f"Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
     vol_table,count,seconds = etrade_apps.volatility.volatility_scanner([],vol,time_period, price,to_csv=True,to_html=True)
 
     body += f"Query Took {seconds} seconds across {count} symbol(s)."
     body += vol_table
+    emails = []
+    if emailwho == 'me': emails = ['kori.s.vernon@gmail.com']
+    elif emailwho == 'all': emails = ['kori.s.vernon@gmail.com','sagaboy65@mac.com','rohan.gopinath9@gmail.com']
 
-    if send_email_with_data(body, subject=subj,receiver_email=['kori.s.vernon@gmail.com','sagaboy65@mac.com','rohan.gopinath9@gmail.com']):
+    if send_email_with_data(body, subject=subj,receiver_email=emails):
         print("Sent email")
         return True
     else:
@@ -211,7 +214,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
-    parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const=".3,3mo,150", nargs='?')
+    parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const=".3,3mo,150,me", nargs='?')
     
     args = parser.parse_args()
     if args.Email or args.canSell or args.StayLive:
