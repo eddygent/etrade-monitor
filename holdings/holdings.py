@@ -84,7 +84,6 @@ class SecurityHolding:
         return None
 
     def can_sell_info(self):
-        ret_str = ""
         for qty, purchase_date, sell_date, sell_days in self.hold_matrix():
             if qty:
                 return self.total_gain * self.ratio(), self._can_sell(), sell_date.strftime('%m-%d-%Y'), sell_days.days

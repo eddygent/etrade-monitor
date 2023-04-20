@@ -297,6 +297,9 @@ class Accounts:
                     print(e, "\nTransactionParser No Transactions Error")
                     self.accounts_transactions[acc.accountId] = []
                     continue
+
+                # print(response.json())
+
                 for tx in transactionDict:
                     if tx['transactionType'] not in BANNED_TRANSACTION_TYPE:
                         try:
