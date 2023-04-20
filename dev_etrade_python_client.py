@@ -152,14 +152,12 @@ def email_volatility(vol_args):
     body += f"Query Took {seconds} seconds across {count} symbol(s)."
     body += vol_table
 
-    if send_email_with_data(body, subject=subj,receiver_email=['kori.s.vernon@gmail.com','sagaboy65@mac.com']):
+    if send_email_with_data(body, subject=subj,receiver_email=['kori.s.vernon@gmail.com','sagaboy65@mac.com','rohan.gopinath9@gmail.com']):
         print("Sent email")
         return True
     else:
         print("Unable to send email.")
         return False
-
-
 
 
 if __name__ == "__main__":
