@@ -17,6 +17,7 @@ import time
 import argparse
 from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
+import etrade_apps.volatility
 from etrade_apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
 import etrade_apps.volatility
 
@@ -79,7 +80,18 @@ def load_accounts(session, base_url):
     accounts.load_accounts()
     return accounts
 
-def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True):
+def different_tickers(accounts):
+    tickers_in_acct = set()
+    account_positions = accounts.accounts_positions
+    for accId in account_positions.keys():
+        try:
+            for pos in account_positions[accId]:
+                tickers_in_acct.add(pos.sym) # add to a set
+        except:
+            continue
+    return list(tickers_in_acct)
+
+def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
     email_contents = []
     if acc_sum:
         email_contents.append(account_summary(accounts))
@@ -87,6 +99,10 @@ def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True):
         email_contents.append(get_accounts_hold(accounts))
     if sell_sum:
         email_contents.append(get_accounts_sell(accounts))
+    if vol:
+        vol_table,_,_ = etrade_apps.volatility.volatility_scanner(symbols=different_tickers(accounts),volatility="0", to_html=True, volume=0)
+        vol_contents = "<h1>Volatility of Holdings</h1>" + vol_table
+        email_contents.append(vol_contents)
 
     piece_together = "".join(email_contents)
     if send_email_with_data(piece_together):
@@ -144,10 +160,14 @@ def process_input(inp, session, base_url, accounts):
 
 
 def email_volatility(vol_args):
-    vol, time_period, price,emailwho = vol_args.split(",")
+    symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
+    volume = int(volume)
+    price = float(price)
+    gt = True if gt.lower() == "g" else False
+    symbols = [] if symbols == "*" else [symbols]
     subj = f"Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
-    vol_table,count,seconds = etrade_apps.volatility.volatility_scanner([],vol,time_period, price,to_csv=True,to_html=True)
+    vol_table,count,seconds = etrade_apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
 
     body += f"Query Took {seconds} seconds across {count} symbol(s)."
     body += vol_table
@@ -164,6 +184,9 @@ def email_volatility(vol_args):
 
 
 if __name__ == "__main__":
+
+    # session, base_url = oauth()
+    # accounts = load_accounts(session, base_url)
 
 
     # sys.path.append(f"{etrade_config.base_dir}/order_security")
@@ -214,10 +237,12 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
-    parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const=".3,3mo,150,me", nargs='?')
-    
+    # symbols, vol, time_period, gt, price, volume, emailwho
+    parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
+
     args = parser.parse_args()
     if args.Email or args.canSell or args.StayLive:
+        print("opening connection")
         session, base_url = oauth()
         accounts = load_accounts(session, base_url)
 

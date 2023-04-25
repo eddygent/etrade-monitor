@@ -44,22 +44,22 @@ def two_week_vol(ticker,date):
     start_date = (datetime.strptime(date,"%Y-%m-%d") - timedelta(days=15)).strftime('%Y-%m-%d')
     return ticker_volatility_matrix_ranged_time(ticker, start_date, end_date)
 
-def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=None,to_csv=True,to_html=False):
+def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=None,to_csv=True,to_html=False,volume=1000000, gt=True):
     volatility = float(volatility)
     price = float(price) if price else 0
     seconds = time.time()
     today = datetime.now().strftime("%Y-%m-%d")
     count = 0
-
+    save_baseline = True if symbols == [] else False
     vol_file = ''
     vol_day_diff = float('inf')
     for assoc_file in os.listdir(f'{DATA_PATH}/voldata'):
-        prefix = f'volatility_scanner_result_{time_period}_baseline'
+        prefix = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{today}.csv'
         if prefix in assoc_file:
             try:
                 ref_file_date = datetime.strptime(
                     f'{assoc_file}',
-                    f'volatility_scanner_result_{time_period}_baseline_%Y-%m-%d.csv'
+                    f'volatility_scanner_result_{time_period}_{volatility}_baseline_%Y-%m-%d.csv'
                 )
             except Exception as e:
                 print(e)
@@ -74,7 +74,7 @@ def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=No
     if vol_day_diff < 5:
         df = pd.read_csv(f'{DATA_PATH}/voldata/{vol_file}')
         df = df.reset_index(drop=True)
-        df = df[['Ticker', 'Volatility','LastPrice','Volume']]
+        df = df[['Ticker', 'Volatility','LastPrice','Mean Volume']]
         count = df.shape[0]
     else:
         if symbols == []:
@@ -95,32 +95,36 @@ def volatility_scanner(symbols=[], volatility=".25", time_period="3mo", price=No
                 print("Error with accessing ticker information for:", tick, ", omitting.")
             print(".", end="")
 
-        df = pd.DataFrame(vol_list, columns=['Ticker', 'Volatility', 'LastPrice','Volume'])
-        if symbols == []: # only when we query for all symbols do we create baseline
-            filename = f'volatility_scanner_result_{time_period}_baseline_{today}.csv'
+        df = pd.DataFrame(vol_list, columns=['Ticker', 'Volatility', 'LastPrice','Mean Volume'])
+        if save_baseline: # only when we query for all symbols do we create baseline
+            filename = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{today}.csv'
             df.to_csv(f'{DATA_PATH}/voldata/{filename}')
     df = df[df["Volatility"] >= volatility]
-    df = df[df['LastPrice'] >= price]
+    if gt:
+        df = df[df['LastPrice'] >= price]
+    else:
+        df = df[df['LastPrice'] >= price]
 
     df = df.sort_values(by=['Volatility'])
 
     sp = ticker_volatility_matrix_with_time_period('SPY', time_period)
     if not (df['Ticker'].eq(sp[0])).any():  # Add S&P to the vol list matrix
         sp[0]= "SPY BASELINE"
-        spy_baseline = pd.DataFrame([sp], columns=['Ticker','Volatility','LastPrice','Volume'])
+        spy_baseline = pd.DataFrame([sp], columns=['Ticker','Volatility','LastPrice','Mean Volume'])
         df = pd.concat([spy_baseline, df]).reset_index(drop=True)
 
     seconds = time.time() - seconds
 
     if to_csv:
         df = df.reset_index(drop=True)
-        filename = f'volatility_scanner_result_{time_period}{"_price_"+str(price)+"_" if price else ""}_{today}.csv'
+        filename = f'volatility_scanner_result_{time_period}{"_price_"+str(price)+"_" if price else ""}{today}.csv'
         df.to_csv(f'{DATA_PATH}/voldata/{filename}')
 
-    df = df[df['Average Volume'] >= 20000000] # we want an average volume of at least 20,000,000
+    df = df[df['Mean Volume'] >= volume] # we want an average volume of at least 20,000,000
 
     if to_html:
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['Ticker']
+        df['Mean Volume'] = df['Mean Volume']/1000
         df = df.reset_index(drop=True)
         if df.shape[0] == 0:
             "No Ticker Fits Search Parameters.", count, seconds
