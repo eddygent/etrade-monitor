@@ -237,7 +237,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
-    # symbols, vol, time_period, gt, price, volume, emailwho
+
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
     args = parser.parse_args()
@@ -266,7 +266,7 @@ if __name__ == "__main__":
             elif inp == "3":
                 tk = input("Check Ticker For Ability to Sell: ")
                 can_i_sell(tk, accounts)
-            elif inp == "E":
+            elif inp.lower() == "E":
                 exit()
 
 
