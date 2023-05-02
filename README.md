@@ -6,7 +6,9 @@ This sample Python application provides examples on using the ETRADE API endpoin
 
 * [Requirements](#requirements)
 * [Setup](#setup)
+* [Obtain Etrade Consumer Key and Consumer Secret](#obtain-etrade-consumer-key-and-consumer-secret)
 * [Running Code](#running-code)
+* [Etrade Monitor](#etrade-monitor)
 
 ## Requirements
 
@@ -21,7 +23,34 @@ already have Python 3 installed, download it from
 
 3. E*TRADE consumer key and consumer secret.
 
-
+## Obtain Etrade Consumer Key and Consumer Secret
+In order to obtain an Etrade Consumer Key and Consumer Secret, you have to go to to Etrade Developer and request the Consumer Secret and Consumer Key
+ * When you login, you can easily request your sandbox key here: https://us.etrade.com/etx/ris/apikey
+ * However, in order to get your Consumer Key, you have to Complete:
+   * User Intent Survey
+   * API Agreement
+   * Market Data Agreement
+   * Market Data Atestation
+ * **Complete Honestly** You can complete the following here: https://developer.etrade.com/getting-started
+   * Note: You do intend to use Market Data, and you do intend to trade on your account and view your positions. 
+ * Once you obtain your Etrade Consumer Key and Consumer Secret, store it somewhere safe!!!
+ * Create the file `etrade_config.py` where your configurations will be placed. 
+ * `etrade_config.py` follows this format. You can copy, paste, and modify to hold your account information:
+```buildoutcfg
+email = "your.email@website.com"
+password = "your_password"
+ACC_TYPE = {
+    "<ACCOUNT NICKNAME IN ETRADE>": "<ACCOUNT FUNCTION>",
+    "stonks": "Investing",
+    "[example]errday spendin": "Checking"
+}
+CONSUMER_KEY = "YOUR CONSUMER KEY"
+CONSUMER_SECRET = "YOUR CONSUMER SECRET"
+SANDBOX_BASE_URL="https://apisb.etrade.com"
+PROD_BASE_URL="https://api.etrade.com"
+base_dir="<COMPLETE FILEPATH TO ETRADE PYTHON CLIENT>/etrade_python_client"
+```
+*Note: This file is in the `.gitignore` double check to ensure your account information is being pushed to GitHub.*
 ## Setup
 
 1. Unzip python zip file
@@ -86,3 +115,7 @@ $ source venv/bin/activate
 $ cd etrade_python_client
 $ python3 etrade_python_client.py
 ```
+
+## Etrade Monitor
+
+Functionalities built out in `dev_etrade_python_client.py`
