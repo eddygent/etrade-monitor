@@ -41,6 +41,7 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
     return ranged_with_vol
 
 def main():
+    print("working")
     df = get_options_chain_within_vol_of_strike_given_time(ticker='TSLA', call_or_put='p', days=30)
     print(df)
 main()
