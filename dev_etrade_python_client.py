@@ -22,14 +22,12 @@ import time
 import argparse
 from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
-import etrade_apps.volatility
-from etrade_apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
-import etrade_apps.volatility
+import apps.volatility
+from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
+import apps.volatility
 
 import os
 base = os.getcwd()
-# loading configuration file
-sys.path.append(f"{etrade_config.base_dir}/etrade-monitor/etrade_python_client")
 # logger settings
 logger = logging.getLogger('my_logger')
 logger.setLevel(logging.DEBUG)
@@ -105,7 +103,7 @@ def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
     if sell_sum:
         email_contents.append(get_accounts_sell(accounts))
     if vol:
-        vol_table,_,_ = etrade_apps.volatility.volatility_scanner(symbols=different_tickers(accounts),volatility="0", to_html=True, volume=0)
+        vol_table,_,_ = apps.volatility.volatility_scanner(symbols=different_tickers(accounts),volatility="0", to_html=True, volume=0)
         vol_contents = "<h1>Volatility of Holdings</h1>" + vol_table
         email_contents.append(vol_contents)
 
@@ -172,7 +170,7 @@ def email_volatility(vol_args):
     symbols = [] if symbols == "*" else [symbols]
     subj = f"Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
-    vol_table,count,seconds = etrade_apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
+    vol_table,count,seconds = apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
 
     body += f"Query Took {seconds} seconds across {count} symbol(s)."
     body += vol_table
