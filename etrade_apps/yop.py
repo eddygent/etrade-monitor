@@ -9,8 +9,6 @@ import volatility
 # ideal = chain[chain['Delta'].between(.2, .3)]
 # print(chain.head().to_string())
 
-# print(ideal)
-
 BID = "Bid"
 LP = 'Last Price'
 STRIKE = 'Strike'
