@@ -48,7 +48,6 @@ CONSUMER_KEY = "YOUR CONSUMER KEY"
 CONSUMER_SECRET = "YOUR CONSUMER SECRET"
 SANDBOX_BASE_URL="https://apisb.etrade.com"
 PROD_BASE_URL="https://api.etrade.com"
-base_dir="<COMPLETE FILEPATH TO ETRADE PYTHON CLIENT>/etrade_python_client"
 ```
 *Note: This file is in the `.gitignore` double check to ensure your account information is being pushed to GitHub.*
 ## Setup
