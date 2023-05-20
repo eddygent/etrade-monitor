@@ -86,33 +86,7 @@ $ pip install -r requirements.txt
 6. Run the sample application
 
 ```
-$ cd etrade_python_client
-$ python3 etrade_python_client.py
-```
-
-## Running Code
-
-Complete these steps to run the code for the sample application:
-
-1. Activate the Python virtual environment
-
-On Windows, run:
-
-```
-$ venv\Scripts\activate.bat
-```
-
-On Unix or Mac OS, run:
-
-```
-$ source venv/bin/activate
-```
-
-2. Run the application
-
-```
-$ cd etrade_python_client
-$ python3 etrade_python_client.py
+$ python3 dev_etrade_python_client.py
 ```
 
 ## Etrade Monitor
