@@ -18,6 +18,10 @@ if not os.path.exists(os.path.join(DATA_PATH,'voldata')):
     print("MAKING NEW DIR VOLDATA")
     os.mkdir(os.path.join(DATA_PATH,'voldata'))
 
+EOD_TIME = datetime.today().replace(hour=4,minute=0,second=0,microsecond=0)
+HEADER = ['ticker', 'lastPrice', 'volatility', 'prevDayVolatility', 'percentMove', 'avgVolume']
+TODAY = datetime.now().strftime("%Y-%m-%d")
+
 def ticker_volatility_matrix_ranged_time(
         ticker,
         start_date=(datetime.now() - timedelta(days=43)).strftime("%Y-%m-%d"),
@@ -56,13 +60,13 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
     volatility = float(volatility)
     price = float(price) if price else 0
     seconds = time.time()
-    today = datetime.now().strftime("%Y-%m-%d")
+    # today = datetime.now().strftime("%Y-%m-%d")
     count = 0
     save_baseline = True if symbols == [] else False
     vol_file = ''
     vol_day_diff = float('inf')
     for assoc_file in os.listdir(f'{DATA_PATH}/voldata'):
-        prefix = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{today}.csv'
+        prefix = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{TODAY}.csv'
         if prefix in assoc_file:
             try:
                 ref_file_date = datetime.strptime(
@@ -105,7 +109,7 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
 
         df = pd.DataFrame(vol_list, columns=['Ticker', 'Volatility', 'LastPrice','Mean Volume'])
         if save_baseline: # only when we query for all symbols do we create baseline
-            filename = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{today}.csv'
+            filename = f'volatility_scanner_result_{time_period}_{volatility}_baseline_{TODAY}.csv'
             df.to_csv(f'{DATA_PATH}/voldata/{filename}')
     df = df[df["Volatility"] >= volatility]
     if gt:
@@ -125,7 +129,7 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
 
     if to_csv:
         df = df.reset_index(drop=True)
-        filename = f'volatility_scanner_result_{time_period}{"_price_"+str(price)+"_" if price else ""}{today}.csv'
+        filename = f'volatility_scanner_result_{time_period}{"_price_"+str(price)+"_" if price else ""}{TODAY}.csv'
         df.to_csv(f'{DATA_PATH}/voldata/{filename}')
 
     df = df[df['Mean Volume'] >= volume] # we want an average volume of at least 20,000,000
@@ -138,3 +142,84 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
             "No Ticker Fits Search Parameters.", count, seconds
         return build_table(df, 'green_dark'),count,seconds
     return df,count,seconds
+
+def tick_vol_runner():
+
+    symbols = []
+
+    f = open(f"{DATA_PATH}/us_symbols.csv", "r")
+    f.readline()
+    for line in f:
+        symbol,_,_ = line.strip("\n").split(",")
+        symbols.append(symbol)
+    f.close()
+
+    filename = f'voldata/volatility_scanner_result_{TODAY}.csv'
+    filepath = os.path.join(DATA_PATH,filename)
+
+    if not os.path.exists(filepath):
+        print(f'creating csv file: {filepath}')
+        f = open(filepath, 'w')
+        print(f'{",".join(HEADER)}', file=f)
+        f.close() # only want to write the first line
+    count = 0
+
+    df = pd.read_csv(filepath)
+
+    for i, tick in enumerate(symbols):
+        count += 1
+        if tick in df['ticker'].values:
+            print("Skipping over, already included.")
+            continue
+        try:
+            df = pd.concat([df, ticker_volatility_matrix_with_time_period_df(tick)])
+        except:
+            print("Error with accessing ticker information for:", tick, ", omitting.")
+        else:
+            df.tail(1).to_csv(filepath, mode='a', index=False,header=False )
+            count += 1
+    return df
+
+def filter_vol_df_find_outliers(dataframe, volume = 0 ):
+    df = dataframe.copy()
+    df = df[(abs(df['percentMove']) >= df['prevDayVolatility']) & (df['avgVolume'] > volume) ]
+    return df.sort_values(by='avgVolume',ascending=False).reset_index(drop=True)
+
+def filter_vol_df_find_vol(dataframe, perc_move=.15, volume = 0):
+    df = dataframe.copy()
+    df = df[(abs(df['percentMove'])  >= perc_move) & (df['prevDayVolatility']<.5) & (df['avgVolume'] > volume)]
+    return df.sort_values(by='avgVolume',ascending=False).reset_index(drop=True)
+
+def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):
+    y = yf.Ticker(ticker)
+    data = y.history(period=time_period)
+    time_period = data.shape[0]
+
+    curr_day = y.info['currentPrice']
+    prev_day = data.iloc[-2].loc['Close']
+
+    diff_days = curr_day/prev_day-1
+
+    data['Log returns'] = np.log(data['Close'] / data['Close'].shift())
+    data['Log returns'].std()
+
+    volatility = data['Log returns'].std() * np.sqrt(time_period)
+
+    # We want to us historical measures of volatility not including past day
+    prev_day_data = data.copy().iloc[:time_period-1,]
+    prev_day_data['Log returns'] = np.log(data['Close'] / data['Close'].shift())
+    prev_day_data['Log returns'].std()
+    prev_day_volatility = prev_day_data['Log returns'].std() * np.sqrt(time_period-1)
+
+    df = pd.DataFrame(columns=HEADER)
+    df.loc[0] = [ticker, y.info['currentPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
+    return df
+
+# def liz():
+#     filename = f'voldata/volatility_scanner_result_{TODAY}.csv'
+#     filepath = os.path.join(DATA_PATH,filename)
+#
+#     df = pd.read_csv(filepath)
+#     # print(f'filter using hypothesis:\n{filter_vol_df_find_outliers(df, volume=1000000)}')
+#     print(f'filter using volatility:\n{filter_vol_df_find_vol(df, volume=1000000)}')
+# liz()
