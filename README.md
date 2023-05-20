@@ -48,6 +48,7 @@ CONSUMER_KEY = "YOUR CONSUMER KEY"
 CONSUMER_SECRET = "YOUR CONSUMER SECRET"
 SANDBOX_BASE_URL="https://apisb.etrade.com"
 PROD_BASE_URL="https://api.etrade.com"
+receiver_email = ["your.email@website.com", "another.email.if.you.want@website.com"]
 ```
 *Note: This file is in the `.gitignore` double check to ensure your account information is being pushed to GitHub.*
 ## Setup
@@ -118,3 +119,15 @@ $ python3 etrade_python_client.py
 ## Etrade Monitor
 
 Functionalities built out in `dev_etrade_python_client.py`
+
+Running the following in Command Line will give send you an email with statistics on your account. 
+*Note: There is a built-in 30-day holding period. If you would not like this functionality then disable.*
+```commandline
+python3 dev_etrade_python_client.py -e
+```
+It will send an email that looks something like this to your target email addresses.
+
+![etrade email top](img/top_email_ex.png?raw=true "Title")
+![etrade email bottom](img/bottom_email_ex.png?raw=true "Title")
+
+Feel free to customize to your own personal use case. 

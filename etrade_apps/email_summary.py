@@ -78,7 +78,7 @@ def account_summary(AccountsObj):
     return s + build_table(df,'blue_light')
 
 def send_email_with_data(contents, subject="E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.email,
-                         receiver_email=["kori.s.vernon@gmail.com"]):
+                         receiver_email=etrade_config.receiver_email):
     receiver_email = ",".join(receiver_email)
 
     # Create a multipart message and set headers

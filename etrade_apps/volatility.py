@@ -143,7 +143,7 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
         return build_table(df, 'green_dark'),count,seconds
     return df,count,seconds
 
-def tick_vol_runner():
+def tick_vol_runner(time_period='3mo'):
 
     symbols = []
 
@@ -154,7 +154,7 @@ def tick_vol_runner():
         symbols.append(symbol)
     f.close()
 
-    filename = f'voldata/volatility_scanner_result_{TODAY}.csv'
+    filename = f'voldata/volatility_scanner_result_{TODAY}_{time_period}.csv'
     filepath = os.path.join(DATA_PATH,filename)
 
     if not os.path.exists(filepath):
@@ -172,23 +172,13 @@ def tick_vol_runner():
             print("Skipping over, already included.")
             continue
         try:
-            df = pd.concat([df, ticker_volatility_matrix_with_time_period_df(tick)])
+            df = pd.concat([df, ticker_volatility_matrix_with_time_period_df(tick, time_period=time_period)])
         except:
             print("Error with accessing ticker information for:", tick, ", omitting.")
         else:
             df.tail(1).to_csv(filepath, mode='a', index=False,header=False )
             count += 1
     return df
-
-def filter_vol_df_find_outliers(dataframe, volume = 0 ):
-    df = dataframe.copy()
-    df = df[(abs(df['percentMove']) >= df['prevDayVolatility']) & (df['avgVolume'] > volume) ]
-    return df.sort_values(by='avgVolume',ascending=False).reset_index(drop=True)
-
-def filter_vol_df_find_vol(dataframe, perc_move=.15, volume = 0):
-    df = dataframe.copy()
-    df = df[(abs(df['percentMove'])  >= perc_move) & (df['prevDayVolatility']<.5) & (df['avgVolume'] > volume)]
-    return df.sort_values(by='avgVolume',ascending=False).reset_index(drop=True)
 
 def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):
     y = yf.Ticker(ticker)
