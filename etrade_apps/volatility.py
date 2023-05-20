@@ -8,7 +8,15 @@ from pretty_html_table import build_table
 import time
 
 #replace with the directory to your data path
-DATA_PATH = '/Users/trapbookpro/Development/Etrade/etrade-monitor/etrade_python_client/data'
+script_path = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH =  script_path + '/../data'
+# check if path exists. if it does not exist then create it.
+if not os.path.exists(DATA_PATH):
+    print("MAKING NEW DIR FOR DATA")
+    os.mkdir(DATA_PATH)
+if not os.path.exists(os.path.join(DATA_PATH,'voldata')):
+    print("MAKING NEW DIR VOLDATA")
+    os.mkdir(os.path.join(DATA_PATH,'voldata'))
 
 def ticker_volatility_matrix_ranged_time(
         ticker,

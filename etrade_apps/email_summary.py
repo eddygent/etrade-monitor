@@ -1,19 +1,20 @@
 import email, smtplib, ssl
+import locale
 
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import os
+import sys
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/../')
 import etrade_config
 
 ACC_TYPE = etrade_config.ACC_TYPE
 
-import babel.numbers
-import decimal
-
-def format_currency(currency):
-    return babel.numbers.format_currency(decimal.Decimal(currency), "USD")
+from helper import format_currency
 
 from pretty_html_table import build_table
 import pandas as pd

@@ -1,11 +1,12 @@
 ###################### Created Classes #######################
 import sys
-import etrade_config
+import os
 # loading configuration file
-sys.path.append(f"{etrade_config.base_dir}/positions")
-from positions import Position
-sys.path.append(f"{etrade_config.base_dir}/transactions")
-from transactions import Transaction, BANNED_TRANSACTION_TYPE
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/positions')
+from positions.positions import Position
+sys.path.insert(0, script_path + '/transactions')
+from transactions.transactions import Transaction, BANNED_TRANSACTION_TYPE
 import pandas as pd
 #################### End Created Classes #####################
 
@@ -19,8 +20,9 @@ from pretty_html_table import build_table
 import babel.numbers
 import decimal
 
-def format_currency(currency):
-    return babel.numbers.format_currency(decimal.Decimal(currency), "USD")
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/../')
+from helper import format_currency
 
 class SecurityHolding:
     def __init__(self):

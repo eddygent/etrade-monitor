@@ -9,7 +9,6 @@ sys.path.append(".")
 import os
 base = os.getcwd()
 # loading configuration file
-sys.path.append(f"{etrade_config.base_dir}/etrade-monitor/etrade_python_client")
 
 # logger settings
 logger = logging.getLogger('my_logger')
@@ -24,21 +23,16 @@ INSTITUTION_TYPE = 'BROKERAGE'
 
 
 ###################### Created Classes #######################
-sys.path.append(f'{etrade_config.base_dir}/positions')
-print(etrade_config.base_dir)
-from positions import Position
-sys.path.append(f'{etrade_config.base_dir}/transactions')
-from transactions import Transaction, BANNED_TRANSACTION_TYPE
-sys.path.append(f'{etrade_config.base_dir}/holdings')
-from holdings import SecurityHolding, SecurityHoldings
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/positions')
+from positions.positions import Position
+sys.path.insert(0, script_path + '/transactions')
+from transactions.transactions import Transaction, BANNED_TRANSACTION_TYPE
+sys.path.insert(0, script_path + '/holdings')
+from holdings.holdings import SecurityHolding, SecurityHoldings
 #################### End Created Classes #####################
 
-import babel.numbers
-import decimal
-
-def format_currency(currency):
-    return babel.numbers.format_currency(decimal.Decimal(currency), "USD")
-
+from helper import format_currency
 
 class Account:
     def __init__(self, accountId, accountIdKey, accountDescription, accountName):

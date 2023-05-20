@@ -1,4 +1,4 @@
-#!/Users/trapbookpro/Development/Etrade/EtradePythonClient/venv/bin/python
+#!/Users/trapbookpro/Development/etrade-monitor/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

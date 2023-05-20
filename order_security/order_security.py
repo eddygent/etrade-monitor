@@ -8,17 +8,19 @@ import sys
 import xmltodict
 from typing import Union
 from jxmlease import emit_xml
+import os
 
 import etrade_config
 # loading configuration file
 from rauth import OAuth1Session
 
-sys.path.append(f"{etrade_config.base_dir}/positions")
-from positions import Position
-sys.path.append(f"{etrade_config.base_dir}/transactions")
-from transactions import Transaction
-sys.path.append(f'{etrade_config.base_dir}/holdings')
-from holdings import SecurityHolding, SecurityHoldings
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/positions')
+from positions.positions import Position
+sys.path.insert(0, script_path + '/transactions')
+from transactions.transactions import Transaction, BANNED_TRANSACTION_TYPE
+sys.path.insert(0, script_path + '/holdings')
+from holdings.holdings import SecurityHolding, SecurityHoldings
 
 CALL = "Call"
 PUT = "Put"
