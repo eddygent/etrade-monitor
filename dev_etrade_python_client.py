@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 20/05/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 """This Python script provides examples on using the E*TRADE API endpoints"""
 from __future__ import print_function
 

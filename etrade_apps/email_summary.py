@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 20/05/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 import email, smtplib, ssl
 import locale
 

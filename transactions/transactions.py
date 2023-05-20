@@ -1,4 +1,9 @@
-
+#!/usr/bin/python3
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 20/05/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 from datetime import datetime,timedelta
 
 BANNED_TRANSACTION_TYPE = ['Deposit', 'Sold']

@@ -1,9 +1,15 @@
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 20/05/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 import yoptions as yo
 from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
 import time
 import volatility
+
 # Chain of all FORD MOTOR COMPANY call options for next expiration date
 # chain = yo.get_chain_greeks(stock_ticker='TSLA', dividend_yield=0, option_type='c', risk_free_rate=None)
 # ideal = chain[chain['Delta'].between(.2, .3)]
