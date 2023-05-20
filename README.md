@@ -34,8 +34,8 @@ In order to obtain an Etrade Consumer Key and Consumer Secret, you have to go to
  * **Complete Honestly** You can complete the following here: https://developer.etrade.com/getting-started
    * Note: You do intend to use Market Data, and you do intend to trade on your account and view your positions. 
  * Once you obtain your Etrade Consumer Key and Consumer Secret, store it somewhere safe!!!
-   * Create the file `etrade_config.py` OR run `bash setup_etrade_config.sh` to create your etrade_config file. This is where your configurations will be placed. 
- * `etrade_config.py` follows this format. You can run `bash setup_etrade_config.sh` to create the config file, or copy, paste, then modify to hold your account information:
+   * Create the file `etrade_config.py` OR run `bash` [`setup_etrade_config.sh`](setup_etrade_config.sh) to create your etrade_config file. This is where your configurations will be placed. 
+ * `etrade_config.py` follows this format. You can run `bash` [`setup_etrade_config.sh`](setup_etrade_config.sh)  to create the config file, or copy, paste, then modify to hold your account information:
 ```buildoutcfg
 email = "your.email@website.com"
 password = "your_password"
@@ -55,8 +55,7 @@ receiver_email = ["your.email@website.com", "another.email.if.you.want@website.c
 
 1. Unzip python zip file
 
-2. Edit [`config.ini`](EtradePythonClient/etrade_python_client/config.ini)
-with your consumer key and consumer secret; copy these from your application's keys' section
+2. Edit `etrade_config.py` with your consumer key and consumer secret; copy these from your application's keys' section
 
 3. Create the virtual environment by running the Python's venv command; see the command syntax below
 
