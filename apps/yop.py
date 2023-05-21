@@ -59,9 +59,6 @@ def get_last_price(ticker):
     fi = sym.fast_info
     return fi['lastPrice']
 
-
-print(get_friday_option_for_ticker_date_closest_to_price().columns)
-
 # chain = yo.get_chain_greeks_date(stock_ticker='TSLA', dividend_yield=1, option_type='p',
 #                                  expiration_date='2023-05-19',risk_free_rate=None)
 # print(chain)

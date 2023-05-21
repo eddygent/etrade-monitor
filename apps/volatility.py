@@ -27,6 +27,7 @@ if not os.path.exists(os.path.join(DATA_PATH,'voldata')):
 EOD_TIME = datetime.today().replace(hour=4,minute=0,second=0,microsecond=0)
 HEADER = ['ticker', 'lastPrice', 'volatility', 'prevDayVolatility', 'percentMove', 'avgVolume']
 TODAY = datetime.now().strftime("%Y-%m-%d")
+EXCLUDE = pd.read_csv(os.path.join(DATA_PATH, 'exclude.csv'))['ticker'].values
 
 def ticker_volatility_matrix_ranged_time(
         ticker,
@@ -176,6 +177,9 @@ def tick_vol_runner(time_period='3mo'):
         count += 1
         if tick in df['ticker'].values:
             print("Skipping over," ,tick , "already included.")
+            continue
+        if tick in EXCLUDE:
+            print("Purposely skipping over", tick)
             continue
         try:
             df = pd.concat([df, ticker_volatility_matrix_with_time_period_df(tick, time_period=time_period)])

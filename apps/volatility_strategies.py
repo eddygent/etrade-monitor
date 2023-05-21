@@ -99,11 +99,11 @@ def generate_positions(df, to_html = False):
     return positions
 
 def vol_scraper_email_str():
-    filename = f'voldata/volatility_scanner_result_2023-05-20_3mo.csv'
-    filepath = os.path.join(DATA_PATH, filename)
-    df = pd.read_csv(filepath)
-    df = df[~df['ticker'].isin(EXCLUDE)]
-    find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df)
+    # filename = f'voldata/volatility_scanner_result_2023-05-20_3mo.csv'
+    # filepath = os.path.join(DATA_PATH, filename)
+    # df = pd.read_csv(filepath)
+    # df = df[~df['ticker'].isin(EXCLUDE)]
+    find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True)
     find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
     # concat and find unique
     df = pd.concat([vol_res, vol_out])
