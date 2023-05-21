@@ -175,7 +175,7 @@ def tick_vol_runner(time_period='3mo'):
     for i, tick in enumerate(symbols):
         count += 1
         if tick in df['ticker'].values:
-            print("Skipping over, already included.")
+            print("Skipping over," ,tick , "already included.")
             continue
         try:
             df = pd.concat([df, ticker_volatility_matrix_with_time_period_df(tick, time_period=time_period)])
@@ -184,6 +184,7 @@ def tick_vol_runner(time_period='3mo'):
         else:
             df.tail(1).to_csv(filepath, mode='a', index=False,header=False )
             count += 1
+            print("Adding " + tick)
     return df
 
 def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):

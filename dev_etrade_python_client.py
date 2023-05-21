@@ -24,7 +24,8 @@ from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
 import apps.volatility
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
-import apps.volatility
+from apps.volatility import *
+from apps.volatility_strategies import *
 
 import os
 base = os.getcwd()
@@ -161,6 +162,9 @@ def process_input(inp, session, base_url, accounts):
     elif inp.upper() == "E":
         exit()
 
+def vol_outliers_email():
+    msg = vol_scraper_email_str()
+    send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
 
 def email_volatility(vol_args):
     symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
@@ -240,6 +244,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
+    parser.add_argument("-vo", "--volatilityOutliers", help="Send Volatility Outliers", action="store_true")
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
@@ -252,6 +257,8 @@ if __name__ == "__main__":
     # Process User inputs
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
+    if args.volatilityOutliers:
+        vol_outliers_email()
     if args.Email:
         email(accounts)
     if args.canSell:

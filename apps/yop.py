@@ -19,7 +19,7 @@ BID = "Bid"
 LP = 'Last Price'
 STRIKE = 'Strike'
 def friday_after_days_out(days= 0, to_str = False):
-    today = datetime.today() + timedelta(days=30)
+    today = datetime.today() + timedelta(days=days)
     friday = today + timedelta( (4-today.weekday()) % 7 )
     if to_str:
         return friday.strftime("%Y-%m-%d")
@@ -28,14 +28,39 @@ def friday_after_days_out(days= 0, to_str = False):
 def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0):
     start = time.time()
     chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put, expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
-    print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain for {ticker} took {time.time()-start} seconds.')
+    if chain.empty:
+        print(f"Error getting expiration date {friday_after_days_out(days, True)}, moving the days forward...")
+        chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7)
+    print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
     return chain
 
+def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330, call_or_put = 'c' , days = 0, long=True):
+    try:
+        chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
+    except IndexError:
+        print("IndexError with", ticker)
+        return pd.DataFrame()
+    try:
+        print(chain)
+        strike = min(chain['Strike'].values, key=lambda x: abs(price-x))
+    except ValueError as e:
+        print("Unable to get Options Chain for",ticker)
+        return pd.DataFrame()
+    abs_diff = abs(price-strike)
+    chain = chain[chain['Strike'].between(abs_diff - price, price+abs_diff)]
+    if (long and call_or_put == 'c') or (not long and call_or_put == 'p'):
+        # return conservative bull position
+        return chain.head(1)
+    else:
+        # return conservative bear position
+        return chain.tail(1)
 def get_last_price(ticker):
     sym = yf.Ticker(ticker)
     fi = sym.fast_info
     return fi['lastPrice']
 
+
+print(get_friday_option_for_ticker_date_closest_to_price().columns)
 
 # chain = yo.get_chain_greeks_date(stock_ticker='TSLA', dividend_yield=1, option_type='p',
 #                                  expiration_date='2023-05-19',risk_free_rate=None)
