@@ -163,8 +163,15 @@ def process_input(inp, session, base_url, accounts):
         exit()
 
 def vol_outliers_email():
-    msg = vol_scraper_email_str()
-    send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+    try:
+        msg = vol_scraper_email_str()
+    except Exception as e:
+        print("Whoops, hit",e,'Trying to re run in 90 seconds.')
+        time.sleep(90)
+        msg = vol_scraper_email_str()
+        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+    else:
+        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
 
 def email_volatility(vol_args):
     symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
@@ -191,6 +198,7 @@ def email_volatility(vol_args):
 
 
 if __name__ == "__main__":
+    print("Runtime:",datetime.now())
 
     # session, base_url = oauth()
     # accounts = load_accounts(session, base_url)
