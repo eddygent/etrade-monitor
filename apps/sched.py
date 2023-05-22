@@ -48,7 +48,7 @@ def run_scheduler():
         print(time_now)
         accounts = e_sub.stay_awake(session, base_url)
         check_portfolio_time(accounts, time_now)
-        check_vol_scraper()
+        # check_vol_scraper() - no longer needed - just need check portfolio
 
 def main():
     run_scheduler()
