@@ -4,9 +4,6 @@
 # Created Date: 20/05/2023
 # Email       : kori.s.vernon@gmail.com
 # ---------------------------------------------------------------------------
-import pandas as pd
-
-print('starting vol strats')
 import os
 import sys
 
