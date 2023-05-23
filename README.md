@@ -10,6 +10,15 @@ This sample Python application provides examples on using the ETRADE API endpoin
 * [Running Code](#running-code)
 * [Etrade Monitor](#etrade-monitor)
 
+
+## ToDo
+- Configure Logging (Low, 1 Difficulty)
+- Documenting Forecasted Trades in a Journal (Medium, 3 Difficulty)
+- Fair Pricer for Stocks and Options (High, x Difficulty Unknown)
+- Sentiment Analysis using NLP (Possibly ChatGPT) or other natural language models (High, x Difficulty Unknown)
+- Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
+- Volatility of Stock Since its purchase (Medium, 3 Difficulty)
+
 ## Requirements
 
 In order to run this sample application you need the following three items:
