@@ -169,20 +169,23 @@ def process_input(inp, session, base_url, accounts):
         email(accounts)
     elif inp == "3":
         tk = input("Check Ticker For Ability to Sell (e to exit): ")
+        if tk.lower() == 'e':
+            exit()
+        can_i_sell(tk, accounts)
     elif inp.upper() == "E":
         exit()
 
-def vol_outliers_email():
-    print(f"vol_outliers_email() @ {datetime.now()} on host: {socket.gethostname()}")
+def vol_outliers_email(date):
+    print(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
     try:
-        msg = vol_scraper_email_str()
+        msg = vol_scraper_email_str(date)
     except Exception as e:
         print("Whoops, hit",e,'Trying to re run in 90 seconds.')
         time.sleep(90)
-        msg = vol_scraper_email_str()
-        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+        msg = vol_scraper_email_str(date)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
     else:
-        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
 
 def start_session():
     print()
@@ -198,7 +201,7 @@ def email_volatility(vol_args):
     price = float(price)
     gt = True if gt.lower() == "g" else False
     symbols = [] if symbols == "*" else [symbols]
-    subj = f"Volatility & Price Scraper"
+    subj = f"EMon: Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
     vol_table,count,seconds = apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
 
@@ -271,7 +274,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
-    parser.add_argument("-vo", "--volatilityOutliers", help="Send Volatility Outliers", action="store_true")
+    parser.add_argument("-vo", "--volatilityOutliers", help=f"Send Volatility Outliers with current date: {TODAY} or what ever date you would like.", type=str, const=TODAY, nargs='?')
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
@@ -285,7 +288,9 @@ if __name__ == "__main__":
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
     if args.volatilityOutliers:
-        vol_outliers_email()
+        date = args.volatilityOutliers
+        print("Volatility Outliers for Date:",date)
+        vol_outliers_email(date)
     if args.Email:
         email(accounts)
     if args.canSell:

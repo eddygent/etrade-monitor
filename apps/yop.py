@@ -28,10 +28,15 @@ def friday_after_days_out(days= 0, to_str = False):
 def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0):
     start = time.time()
     chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put, expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
-    if chain.empty:
-        print(f"Error getting expiration date {friday_after_days_out(days, True)}, moving the days forward...")
-        chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7)
-    print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
+    try:
+        if chain.empty:
+            print(f"Error getting expiration date {friday_after_days_out(days, True)}, moving the days forward...")
+            chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7)
+        print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
+    except AttributeError:
+        print(f"Error getting the chain for:\n{chain}")
+        print(f"Returning Empty Dataframe.")
+        return pd.DataFrame()
     return chain
 
 def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330, call_or_put = 'c' , days = 0, long=True):
@@ -43,8 +48,8 @@ def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330
     try:
         print(chain)
         strike = min(chain['Strike'].values, key=lambda x: abs(price-x))
-    except ValueError as e:
-        print("Unable to get Options Chain for",ticker)
+    except Exception as e:
+        print(f"Error, {e}, Unable to get Options Chain for: {ticker}")
         return pd.DataFrame()
     abs_diff = abs(price-strike)
     chain = chain[chain['Strike'].between(abs_diff - price, price+abs_diff)]
