@@ -22,6 +22,99 @@ import random, string
 
 db = firestore.client()
 
+class GeneratedPosition:
+    def __init__(self):
+        self.ID = None
+        self.symbol = None
+        self.ticker = None
+        self.strike = None
+        self.position = None
+        self.lastOptionPrice = None
+        self.position = None
+        self.GenerationDate = None
+        self.speculativePercMove = None
+        self.percMove = None
+        self.prevDayVolatility = None
+        self.currDayVolatility = None
+        self.underlyingPrice = None
+        self.record = None
+        self.exit = None
+        self.gain = None
+        self.underlyingGain = None
+
+    def set_from_document(self, doc):
+        self.doc_ref = db.collection(u'GeneratedPositions')
+        self.ID = doc.id
+        data = doc.to_dict()
+        self.symbol = data['symbol']
+        self.ticker = data['ticker']
+        self.strike = data['strike']
+        self.position = data['position']
+        self.lastOptionPrice  = data['lastOptionPrice']
+        self.GenerationDate = data['GenerationDate']
+        self.speculativePercMove = data['speculativePercMove']
+        self.percMove = data['percMove']
+        self.prevDayVolatility = data['prevDayVolatility']
+        self.currDayVolatility = data['currDayVolatility']
+        self.underlyingPrice = data['underlyingPrice']
+        existing_record = {}
+        try:
+            existing_record = data['record']
+        except Exception as e:
+            logging.DEBUG(f'record for {self.symbol} not initialized.')
+        self.record = existing_record
+
+        try: underlyingGain = data['underlyingGain']
+        except Exception as e:
+            logging.DEBUG(f'underlyingGain for {self.symbol} not initialized.')
+            underlyingGain = 0
+        self.underlyingGain = underlyingGain
+
+        try: gain = data['gain']
+        except Exception as e:
+            logging.DEBUG(f'gain for {self.symbol} not initialized.')
+            gain = 0
+        self.gain = gain
+
+        try: exit = data['exit']
+        except Exception as e:
+            logging.DEBUG(f'exit for {self.symbol} not initialized.')
+            exit = False
+        self.gain = exit
+
+    def update_fields(self):
+        # get the updated price and underlying of the ticker and symbol
+        date, underlyingPrice, optionPrice = self.getUpdatedData()
+        self.gain = optionPrice - self.lastOptionPrice #notes lastOptionPrice is the first recorded option price
+        self.underlyingGain = underlyingPrice - self.underlyingPrice
+        self.exit = self.close_position(underlyingPrice)
+
+        updated_data = {
+                        'date': date,
+                        'updatedOptionPrice': optionPrice,
+                        'updatedUnderlyingPrice': underlyingPrice,
+                        'gain': self.gain,
+                        'underlyingGain':self.underlyingGain
+                        }
+        self.record[date] = updated_data
+        self.doc_ref.doc(self.doc_id).update({'record': self.record})
+        self.doc_ref.doc(self.doc_id).update({'gain': self.gain})
+        self.doc_ref.doc(self.doc_id).update({'underlyingGain': self.underlyingGain})
+        self.doc_ref.doc(self.doc_id).update({'exit': self.exit})
+        print(f'Updated GeneratedPositions:\n{self.doc_ref.doc(self.doc_id).to_dict()}')
+
+    def close_position(self, latestUnderlyingPrice):
+        # if the underlying moves too much in a direction we don't want it to move
+        if (self.underlyingPrice / latestUnderlyingPrice) >= self.percMove/2:
+            # if the position continues to slip further in the direction we don't want, close out
+            return True
+        return False
+
+
+    def getUpdatedData(self):
+        pass
+
+
 def generate_random_key():
     x = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
     return x
