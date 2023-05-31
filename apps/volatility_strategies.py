@@ -15,6 +15,11 @@ from pretty_html_table import build_table
 
 EXCLUDE = pd.read_csv(os.path.join(DATA_PATH, 'exclude.csv'))['ticker'].values
 
+import logging
+level = logging.DEBUG
+fmt =  "[%(levelname)s] [apps/volatility_strategies.py] %(asctime)-15s %(message)s"
+logging.basicConfig(level=level, format=fmt)
+
 def get_latest_vol_df(time_period='3mo'):
     return tick_vol_runner(time_period)
 
@@ -111,14 +116,14 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
         df = pd.read_csv(filepath)
         df = df[~df['ticker'].isin(EXCLUDE)]
         find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df)
-        print(df)
+        logging.info(f'Result of filter_vol_all_symbols_find_vol:\n{df}')
         find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
-        print(df)
+        logging.info(f'Result of filter_vol_all_symbols_find_outliers:\n{df}')
     else:
         find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True)
-        print(df)
+        logging.info(f'Result of filter_vol_all_symbols_find_vol:\n{df}')
         find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
-        print(df)
+        logging.info(f'Result of filter_vol_all_symbols_find_outliers:\n{df}')
     # concat and find unique
     df = pd.concat([vol_res, vol_out])
     df = df.drop_duplicates(ignore_index=True)
@@ -257,7 +262,7 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
     _,vol,curr_price,_ = volatility.ticker_volatility_matrix_with_time_period(ticker, _time_period)
     adj_vol = vol / vol_factor
     ranged_with_vol = chain[chain['Strike'].between((1-adj_vol)*curr_price, curr_price*(1+adj_vol))]
-    print(f'Volatility range of {days+time_period_adj} days is: {vol}, with adjusted volatility of: {adj_vol}.')
+    (f'Volatility range of {days+time_period_adj} days is: {vol}, with adjusted volatility of: {adj_vol}.')
     ranged_with_vol = ranged_with_vol.reset_index(drop=True)
     return ranged_with_vol
 

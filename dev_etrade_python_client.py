@@ -29,13 +29,16 @@ from apps.volatility_strategies import *
 import os
 base = os.getcwd()
 # logger settings
-logger = logging.getLogger('my_logger')
-logger.setLevel(logging.DEBUG)
-handler = RotatingFileHandler("python_client.log", maxBytes=5*1024*1024, backupCount=3)
-FORMAT = "%(asctime)-15s %(message)s"
-fmt = logging.Formatter(FORMAT, datefmt='%m/%d/%Y %I:%M:%S %p')
-handler.setFormatter(fmt)
-logger.addHandler(handler)
+level = logging.DEBUG
+fmt =  "[%(levelname)s] [dev_etrade_python_client.py] %(asctime)-15s %(message)s"
+logging.basicConfig(level=level, format=fmt)
+# logger = logging.getLogger('my_logger')
+# logger.setLevel(logging.INFO)
+# handler = RotatingFileHandler("python_client.log", maxBytes=5*1024*1024, backupCount=3)
+# FORMAT = "[%(levelname)s] %(asctime)-15s %(message)s"
+# fmt = logging.Formatter(FORMAT, datefmt='%m/%d/%Y %I:%M:%S %p')
+# handler.setFormatter(fmt)
+# logger.addHandler(handler)
 
 def oauth():
     """Allows user authorization for the sample application with OAuth 1"""
@@ -67,25 +70,25 @@ def oauth():
     return session, base_url
 
 def can_i_sell(ticker, AccountsObj):
-    print(f"can_i_sell(ticker={ticker}, AccountsObj={AccountsObj}) on host: {socket.gethostname()}")
+    logging.info(f"can_i_sell(ticker={ticker}, AccountsObj={AccountsObj}) on host: {socket.gethostname()}")
     for acc in AccountsObj.accounts:
         contents = AccountsObj.accounts_holdings[acc.accountId]._can_sell()
         for tk,qty in contents:
             if ticker.upper() in tk.upper():
-                print(f"Can Sell: {tk} and Qty: {qty}")
+                logging.info(f"Can Sell: {tk} and Qty: {qty}")
     tk = input("Check Ticker For Ability to Sell (e to exit): ")
     if tk.lower() == "e":
         return
     can_i_sell(tk, AccountsObj)
 
 def load_accounts(session, base_url):
-    print(f"load_accounts(session={session},base_url={base_url}) on host: {socket.gethostname()}")
+    logging.info(f"load_accounts(session={session},base_url={base_url}) on host: {socket.gethostname()}")
     accounts = Accounts(session, base_url)
     accounts.load_accounts()
     return accounts
 
 def different_tickers(accounts):
-    print(f"different_tickers(accounts={accounts}) on host: {socket.gethostname()}")
+    logging.info(f"different_tickers(accounts={accounts}) on host: {socket.gethostname()}")
     tickers_in_acct = set()
     account_positions = accounts.accounts_positions
     for accId in account_positions.keys():
@@ -97,7 +100,7 @@ def different_tickers(accounts):
     return list(tickers_in_acct)
 
 def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
-    print(f"email(accounts={accounts}, acc_sum={acc_sum}, hold_sum={hold_sum}, sell_sum={sell_sum}, vol={vol}) on host: {socket.gethostname()}")
+    logging.info(f"email(accounts={accounts}, acc_sum={acc_sum}, hold_sum={hold_sum}, sell_sum={sell_sum}, vol={vol}) on host: {socket.gethostname()}")
     email_contents = []
     if acc_sum:
         email_contents.append(account_summary(accounts))
@@ -112,20 +115,20 @@ def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
 
     piece_together = "".join(email_contents)
     if send_email_with_data(piece_together):
-        print("Sent email")
+        logging.info("Sent email")
         return True
     else:
-        print("Unable to send email.")
+        logging.debug("Unable to send email.")
         return False
 
 def stay_awake(session, base_url):
-    print(f"stay_awake({session}, {base_url}) on host: {socket.gethostname()}")
+    logging.info(f"stay_awake({session}, {base_url}) on host: {socket.gethostname()}")
     time.sleep(5)
     accounts = load_accounts(session, base_url)
     return accounts
 
 def stay_live(session, base_url):
-    print(f"stay_live(session={session}, base_url={base_url}) on host: {socket.gethostname()}")
+    logging.info(f"stay_live(session={session}, base_url={base_url}) on host: {socket.gethostname()}")
     print("Press any Key to Interrupt Stay Alive:")
     start = time.time()
     email_am = (6,30)
@@ -135,13 +138,13 @@ def stay_live(session, base_url):
         accounts = stay_awake(session, base_url)
         if (_now.hour == email_am[0] and _now.minute == email_am[1]) or (_now.hour == email_pm[0] and _now.minute == email_pm[1]):
             email(accounts)
-        print("Time Awake:", time.time() - start, "seconds.")
+        logging.info("Time Awake:", time.time() - start, "seconds.")
         try:
             inp = inputimeout(prompt="Press any Key to Interrupt Stay Alive",timeout=5)
         except TimeoutOccurred:
             continue
         else:
-            print("returning account")
+            logging.info("returning account")
             return accounts
 
 def alive_menu():
@@ -161,7 +164,7 @@ def alive_menu():
         else: return inp
 
 def process_input(inp, session, base_url, accounts):
-    print(f"process_input(inp={inp}, session={session}, base_url={base_url}, accounts={accounts}) @ {datetime.now()} on host: {socket.gethostname()}")
+    logging.info(f"process_input(inp={inp}, session={session}, base_url={base_url}, accounts={accounts}) @ {datetime.now()} on host: {socket.gethostname()}")
     if inp == "1":
         accounts = stay_live(session, base_url)
         inp = alive_menu()
@@ -176,11 +179,11 @@ def process_input(inp, session, base_url, accounts):
         exit()
 
 def vol_outliers_email(date):
-    print(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
+    logging.info(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
     try:
         msg,pos = vol_scraper_outliers_data(date)
     except Exception as e:
-        print("Whoops, hit",e,'Trying to re run in 90 seconds.')
+        logging.debug("Whoops, hit",e,'Trying to re run in 90 seconds.')
         time.sleep(90)
         msg,pos = vol_scraper_outliers_data(date)
         send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
@@ -188,14 +191,13 @@ def vol_outliers_email(date):
         send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
 
 def start_session():
-    print()
-    print(f"start_session() @ {datetime.now()} on host: {socket.gethostname()}")
+    logging.info(f"start_session() @ {datetime.now()} on host: {socket.gethostname()}")
     session, base_url = oauth()
     accounts = load_accounts(session, base_url)
     return session, accounts, base_url
 
 def email_volatility(vol_args):
-    print(f"email_volatility(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
+    logging.info(f"email_volatility(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
     symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
     volume = int(volume)
     price = float(price)
@@ -212,15 +214,15 @@ def email_volatility(vol_args):
     elif emailwho == 'all': emails = ['kori.s.vernon@gmail.com','sagaboy65@mac.com','rohan.gopinath9@gmail.com']
 
     if send_email_with_data(body, subject=subj,receiver_email=emails):
-        print("Sent email")
+        logging.info("Sent email")
         return True
     else:
-        print("Unable to send email.")
+        logging.debug("Unable to send email.")
         return False
 
 
 if __name__ == "__main__":
-    print("Runtime:",datetime.now())
+    logging.info("Runtime:",datetime.now())
 
     # session, base_url = oauth()
     # accounts = load_accounts(session, base_url)
@@ -268,7 +270,7 @@ if __name__ == "__main__":
     # order.sell_security_market_order(accounts.accounts_holdings[test.accountId].holdings['AAPL'])
     # order.cancel_order()
 
-
+    logging.info(f'EMON Tool Initialized')
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--Email", help="Email Account Summary, Hold Summary, Can Sell Summary", action="store_true")
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
@@ -280,7 +282,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     if args.Email or args.canSell or args.StayLive:
-        print("opening connection")
         session, base_url = oauth()
         accounts = load_accounts(session, base_url)
 
@@ -289,7 +290,7 @@ if __name__ == "__main__":
         email_volatility(args.volatilityScanner)
     if args.volatilityOutliers:
         date = args.volatilityOutliers
-        print("Volatility Outliers for Date:",date)
+        logging.info("Volatility Outliers for Date:",date)
         vol_outliers_email(date)
     if args.Email:
         email(accounts)
