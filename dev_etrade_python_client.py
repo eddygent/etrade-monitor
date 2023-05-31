@@ -5,8 +5,7 @@
 # Email       : kori.s.vernon@gmail.com
 # ---------------------------------------------------------------------------
 """This Python script provides examples on using the E*TRADE API endpoints"""
-from __future__ import print_function
-
+import socket
 import datetime
 import webbrowser
 import json
@@ -68,6 +67,7 @@ def oauth():
     return session, base_url
 
 def can_i_sell(ticker, AccountsObj):
+    print(f"can_i_sell(ticker={ticker}, AccountsObj={AccountsObj}) on host: {socket.gethostname()}")
     for acc in AccountsObj.accounts:
         contents = AccountsObj.accounts_holdings[acc.accountId]._can_sell()
         for tk,qty in contents:
@@ -79,12 +79,13 @@ def can_i_sell(ticker, AccountsObj):
     can_i_sell(tk, AccountsObj)
 
 def load_accounts(session, base_url):
-
+    print(f"load_accounts(session={session},base_url={base_url}) on host: {socket.gethostname()}")
     accounts = Accounts(session, base_url)
     accounts.load_accounts()
     return accounts
 
 def different_tickers(accounts):
+    print(f"different_tickers(accounts={accounts}) on host: {socket.gethostname()}")
     tickers_in_acct = set()
     account_positions = accounts.accounts_positions
     for accId in account_positions.keys():
@@ -96,6 +97,7 @@ def different_tickers(accounts):
     return list(tickers_in_acct)
 
 def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
+    print(f"email(accounts={accounts}, acc_sum={acc_sum}, hold_sum={hold_sum}, sell_sum={sell_sum}, vol={vol}) on host: {socket.gethostname()}")
     email_contents = []
     if acc_sum:
         email_contents.append(account_summary(accounts))
@@ -117,15 +119,22 @@ def email(accounts, acc_sum=True, hold_sum=True, sell_sum=True, vol=True):
         return False
 
 def stay_awake(session, base_url):
+    print(f"stay_awake({session}, {base_url}) on host: {socket.gethostname()}")
     time.sleep(5)
     accounts = load_accounts(session, base_url)
     return accounts
 
 def stay_live(session, base_url):
+    print(f"stay_live(session={session}, base_url={base_url}) on host: {socket.gethostname()}")
     print("Press any Key to Interrupt Stay Alive:")
     start = time.time()
+    email_am = (6,30)
+    email_pm = (16,0)
     while True:
+        _now = datetime.now()
         accounts = stay_awake(session, base_url)
+        if (_now.hour == email_am[0] and _now.minute == email_am[1]) or (_now.hour == email_pm[0] and _now.minute == email_pm[1]):
+            email(accounts)
         print("Time Awake:", time.time() - start, "seconds.")
         try:
             inp = inputimeout(prompt="Press any Key to Interrupt Stay Alive",timeout=5)
@@ -152,6 +161,7 @@ def alive_menu():
         else: return inp
 
 def process_input(inp, session, base_url, accounts):
+    print(f"process_input(inp={inp}, session={session}, base_url={base_url}, accounts={accounts}) @ {datetime.now()} on host: {socket.gethostname()}")
     if inp == "1":
         accounts = stay_live(session, base_url)
         inp = alive_menu()
@@ -159,27 +169,39 @@ def process_input(inp, session, base_url, accounts):
         email(accounts)
     elif inp == "3":
         tk = input("Check Ticker For Ability to Sell (e to exit): ")
+        if tk.lower() == 'e':
+            exit()
+        can_i_sell(tk, accounts)
     elif inp.upper() == "E":
         exit()
 
-def vol_outliers_email():
+def vol_outliers_email(date):
+    print(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
     try:
-        msg = vol_scraper_email_str()
+        msg,pos = vol_scraper_outliers_data(date)
     except Exception as e:
         print("Whoops, hit",e,'Trying to re run in 90 seconds.')
         time.sleep(90)
-        msg = vol_scraper_email_str()
-        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+        msg,pos = vol_scraper_outliers_data(date)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
     else:
-        send_email_with_data(msg, subject="EMon: Volatility Outliers Job", receiver_email=etrade_config.receiver_email)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
+
+def start_session():
+    print()
+    print(f"start_session() @ {datetime.now()} on host: {socket.gethostname()}")
+    session, base_url = oauth()
+    accounts = load_accounts(session, base_url)
+    return session, accounts, base_url
 
 def email_volatility(vol_args):
+    print(f"email_volatility(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
     symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
     volume = int(volume)
     price = float(price)
     gt = True if gt.lower() == "g" else False
     symbols = [] if symbols == "*" else [symbols]
-    subj = f"Volatility & Price Scraper"
+    subj = f"EMon: Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
     vol_table,count,seconds = apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
 
@@ -252,7 +274,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
-    parser.add_argument("-vo", "--volatilityOutliers", help="Send Volatility Outliers", action="store_true")
+    parser.add_argument("-vo", "--volatilityOutliers", help=f"Send Volatility Outliers with current date: {TODAY} or what ever date you would like.", type=str, const=TODAY, nargs='?')
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
@@ -266,7 +288,9 @@ if __name__ == "__main__":
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
     if args.volatilityOutliers:
-        vol_outliers_email()
+        date = args.volatilityOutliers
+        print("Volatility Outliers for Date:",date)
+        vol_outliers_email(date)
     if args.Email:
         email(accounts)
     if args.canSell:

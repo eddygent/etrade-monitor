@@ -4,9 +4,6 @@
 # Created Date: 20/05/2023
 # Email       : kori.s.vernon@gmail.com
 # ---------------------------------------------------------------------------
-import pandas as pd
-
-print('starting vol strats')
 import os
 import sys
 
@@ -90,26 +87,43 @@ def generate_positions(df, to_html = False):
     positions = pd.DataFrame()
     for index, row in df.iterrows():
         determined_position = determine_position(row['ticker'], row['percentMove'], row['specPrice'], row['avgVolume'])
+
+        determined_position['speculativePercMove'] = row['speculativePercMove']
+        determined_position['prevDayVolatility'] = row['prevDayVolatility']
+        determined_position['volatility'] = row['volatility']
+        determined_position['lastPrice'] = row['lastPrice']
+
         positions = pd.concat([positions, determined_position])
+    positions.to_csv(os.path.join(DATA_PATH, f'generated_positions_{TODAY}.csv'))
+    positions = positions.reset_index()
     if to_html:
-        positions = positions[
+        html_positions = positions.copy()[
             ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Impl. Volatility']]
-        positions = positions.reset_index(drop=True)
-        return build_table(positions, 'blue_light')
+        html_positions = html_positions.reset_index(drop=True)
+        return build_table(html_positions, 'blue_light'), positions
     return positions
 
-def vol_scraper_email_str():
-    # filename = f'voldata/volatility_scanner_result_2023-05-20_3mo.csv'
-    # filepath = os.path.join(DATA_PATH, filename)
-    # df = pd.read_csv(filepath)
-    # df = df[~df['ticker'].isin(EXCLUDE)]
-    find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True)
-    find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
+def vol_scraper_outliers_data(date=TODAY, to_html = True):
+
+    filename = f'voldata/volatility_scanner_result_{date}_3mo.csv'
+    filepath = os.path.join(DATA_PATH, filename)
+    if os.path.exists(filepath):
+        df = pd.read_csv(filepath)
+        df = df[~df['ticker'].isin(EXCLUDE)]
+        find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df)
+        print(df)
+        find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
+        print(df)
+    else:
+        find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True)
+        print(df)
+        find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
+        print(df)
     # concat and find unique
     df = pd.concat([vol_res, vol_out])
     df = df.drop_duplicates(ignore_index=True)
-    positions_html = generate_positions(df, to_html = True)
-    s = f"<h1>Volatility Outliers: {TODAY}</h1>"
+    positions_html, positions = generate_positions(df, to_html = True)
+    s = f"<h1>Volatility Outliers: {date}</h1>"
     s += str_vol + "<br>"
     s += find_vol + "<br>"
     s += str_out + "<br>"
@@ -118,7 +132,10 @@ def vol_scraper_email_str():
     s += "<h2>Options Positions</h2>"
     s += positions_html
     s += "<em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>"
-    return s
+    if to_html:
+        return s
+    else:
+        return positions
 
 def determine_position(ticker, perc_move, spec_price, volume):
     perc_move = perc_move *-1
@@ -147,6 +164,7 @@ def determine_position(ticker, perc_move, spec_price, volume):
     print("Adding",position,ticker,"Options Strat")
     chain['Position'] = position
     chain['Ticker'] = ticker
+    chain['percMove'] = perc_move
     return chain
 
 
@@ -243,27 +261,28 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
     ranged_with_vol = ranged_with_vol.reset_index(drop=True)
     return ranged_with_vol
 
-def main():
-    # ticker = 'TSLA'
-    # put_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='p', days=30)
-    # call_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=30)
-    # # df = get_options_chain_within_vol_of_strike_given_time(ticker='TSLA', call_or_put='p', days=30, vol_factor=4)
-    # print('short strangle skewed down')
-    # sssd = short_strangle_vol_skewed_down(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
-    # print(sssd)
-    #
-    # print('short strangle neutral')
-    # ssn = short_strangle_vol_neutral(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
-    # print(ssn)
-    #
-    # print('short strangle skewed up')
-    # sssu = short_strangle_vol_skewed_up(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
-    # print(sssu)
-    # filename = f'voldata/volatility_scanner_result_2023-05-20_3mo.csv'
-    # filepath = os.path.join(DATA_PATH, filename)
-    # df = pd.read_csv(filepath)
-    # find_vol,str_vol,df = filter_vol_all_symbols_find_vol(dataframe=df,volume=1000000)
-    # find_out,str_out,df = filter_vol_all_symbols_find_outliers(dataframe=df,volume=1000000)
-    # print(vol_scraper_email_str())
-    pass
-main()
+# def main():
+#     # ticker = 'TSLA'
+#     # put_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='p', days=30)
+#     # call_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=30)
+#     # # df = get_options_chain_within_vol_of_strike_given_time(ticker='TSLA', call_or_put='p', days=30, vol_factor=4)
+#     # print('short strangle skewed down')
+#     # sssd = short_strangle_vol_skewed_down(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
+#     # print(sssd)
+#     #
+#     # print('short strangle neutral')
+#     # ssn = short_strangle_vol_neutral(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
+#     # print(ssn)
+#     #
+#     # print('short strangle skewed up')
+#     # sssu = short_strangle_vol_skewed_up(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
+#     # print(sssu)
+#     filename = f'voldata/volatility_scanner_result_2023-05-29_3mo.csv'
+#     filepath = os.path.join(DATA_PATH, filename)
+#     df = pd.read_csv(filepath)
+#     find_vol,str_vol,df = filter_vol_all_symbols_find_vol(dataframe=df,volume=1000000)
+#     print(find_vol)
+#     find_out,str_out,df = filter_vol_all_symbols_find_outliers(dataframe=df,volume=1000000)
+#     print(find_out)
+#     print(vol_scraper_email_str('2023-05-29'))
+# main()
