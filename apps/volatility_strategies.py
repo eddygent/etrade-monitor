@@ -277,12 +277,5 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
 #     # print('short strangle skewed up')
 #     # sssu = short_strangle_vol_skewed_up(ticker='TSLA', put_chain=put_chain, call_chain=call_chain)
 #     # print(sssu)
-#     filename = f'voldata/volatility_scanner_result_2023-05-29_3mo.csv'
-#     filepath = os.path.join(DATA_PATH, filename)
-#     df = pd.read_csv(filepath)
-#     find_vol,str_vol,df = filter_vol_all_symbols_find_vol(dataframe=df,volume=1000000)
-#     print(find_vol)
-#     find_out,str_out,df = filter_vol_all_symbols_find_outliers(dataframe=df,volume=1000000)
-#     print(find_out)
 #     print(vol_scraper_email_str('2023-05-29'))
 # main()
