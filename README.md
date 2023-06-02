@@ -102,9 +102,9 @@ Functionalities built out in `dev_etrade_python_client.py`
 
 Running the following in Command Line will give send you an email with statistics on your account. 
 *Note: There is a built-in 30-day holding period. If you would not like this functionality then disable.*
-```commandline
-python3 dev_etrade_python_client.py -e
-```
+
+[`python3 dev_etrade_python_client.py -e`](dev_etrade_python_client.py)
+
 It will send an email that looks something like this to your target email addresses.
 
 ![etrade email top](img/top_email_ex.png?raw=true "Title")

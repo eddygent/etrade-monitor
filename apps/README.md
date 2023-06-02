@@ -30,13 +30,14 @@ analyze_sentiment=True, analyze_summary=True)`
 sentiment analysis and summary for a given stock when passed a DataFrame of Articles.
 *For more information:* https://medium.com/data-and-beyond/sentiment-analysis-with-chatgpt-openai-and-python-use-chatgpt-to-build-a-sentiment-analysis-ai-2b89158a37f6
 
+![emon sentiment analysis](../img/sentiment-analysis-snippet.png?raw=true "Title")
+
 ## Options Volatility Screener
-**Relevant File(s):** `volatility.py`,`volatility_strategies.py`
+**Relevant File(s):** `volatility.py`,`volatility_strategies.py`,`yop.py`
 
-**Relevant Function(s):** `generate_sentiment_summary_matrix(df, focus, 
-analyze_sentiment=True, analyze_summary=True)` 
+**Relevant Function(s):** 
 
-**Description:** The options volatility screener will scan all of the US Symbols (`../data/us_symbols.csv`) and genererate a matrix 
+**Description:** The options volatility screener will scan all US Symbols (`../data/us_symbols.csv`) and genererate a matrix 
 that contains the:`ticker,lastPrice,volatility,prevDayVolatility,percentMove,avgVolume`. 
 This data will be saved under `../data/voldata`. 
 
@@ -44,7 +45,7 @@ The data will be used find large moves in volatility above a certain volume thre
 From here, options positions will be generated that assume the stock will somewhat revert back
 to its average price, and volatility range prior to the large move in the stock. 
 
-*For example, if the average volatility over the last 3 months for a stock was 10%. All of the sudden
+*For example, if the average volatility over the last 3 months for a stock was 10%. Suddenly,
 there is a +20% move in one day, this is somewhat out of the ordinary.*
 
 **prevDayVolatility = .10**, **volatility = .25** and the **percentMove = .20**. 
@@ -54,3 +55,9 @@ the assumption that the stock will revert at least the difference between the vo
 - **( abs(.25 [volatility] - .10 [prevDayVolatility])(.20 [percentMove] )(-1 [factor])**) is the `targetPrice`
 - Open up a conservative bearish position by scanning the options chain. 
 - Determine whether to short on long based on volume (for higher volume short *implying it's better to hold stocks with large volume* and long *implying it's better to **not** own stocks with lower volume*).
+
+### Send to your email using:
+[`python3 dev_etrade_python_client.py -vo`](../dev_etrade_python_client.py)
+
+It will look something like this: 
+![emon etrade volatility screener](../img/volatility-screener-email.png?raw=true "Title")
