@@ -138,7 +138,8 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
     s += positions_html
     s += "<em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>"
     if to_html:
-        return s
+        print(s, positions)
+        return s, positions
     else:
         return positions
 

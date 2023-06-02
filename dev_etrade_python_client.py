@@ -183,7 +183,7 @@ def vol_outliers_email(date):
     try:
         msg,pos = vol_scraper_outliers_data(date)
     except Exception as e:
-        logging.debug("Whoops, hit",e,'Trying to re run in 90 seconds.')
+        logging.debug(f"Whoops, hit {e}. Trying to re run in 90 seconds.")
         time.sleep(90)
         msg,pos = vol_scraper_outliers_data(date)
         send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
@@ -222,7 +222,7 @@ def email_volatility(vol_args):
 
 
 if __name__ == "__main__":
-    logging.info("Runtime:",datetime.now())
+    logging.info(f"Runtime: {datetime.now()}")
 
     # session, base_url = oauth()
     # accounts = load_accounts(session, base_url)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
         email_volatility(args.volatilityScanner)
     if args.volatilityOutliers:
         date = args.volatilityOutliers
-        logging.info("Volatility Outliers for Date:",date)
+        logging.info(f"Volatility Outliers for Date: {date}")
         vol_outliers_email(date)
     if args.Email:
         email(accounts)
