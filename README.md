@@ -10,10 +10,8 @@
 
 
 ## ToDo
-- Configure Logging (Low, 1 Difficulty)
 - Documenting Forecasted Trades in a Journal (Medium, 3 Difficulty)
 - Fair Pricer for Stocks and Options (High, x Difficulty Unknown)
-- Sentiment Analysis using NLP (Possibly ChatGPT) or other natural language models (High, x Difficulty Unknown)
 - Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
 - Volatility of Stock Since its purchase (Medium, 3 Difficulty)
 
@@ -31,8 +29,8 @@ already have Python 3 installed, download it from
 3. E*TRADE consumer key and consumer secret.
 
 ## Obtain Etrade Consumer Key and Consumer Secret
-In order to obtain an Etrade Consumer Key and Consumer Secret, you have to go to to Etrade Developer and request the Consumer Secret and Consumer Key
- * When you login, you can easily request your sandbox key here: https://us.etrade.com/etx/ris/apikey
+In order to obtain an Etrade Consumer Key and Consumer Secret, you have to go to Etrade Developer and request the Consumer Secret and Consumer Key
+ * When you log in, you can easily request your sandbox key here: https://us.etrade.com/etx/ris/apikey
  * However, in order to get your Consumer Key, you have to Complete:
    * User Intent Survey
    * API Agreement
@@ -100,7 +98,7 @@ $ python3 dev_etrade_python_client.py
 
 Functionalities built out in `dev_etrade_python_client.py`
 
-Running the following in Command Line will give send you an email with statistics on your account. 
+Running the following in Command Line will send you an email with statistics on your account. 
 *Note: There is a built-in 30-day holding period. If you would not like this functionality then disable.*
 
 [`python3 dev_etrade_python_client.py -e`](dev_etrade_python_client.py)
@@ -109,5 +107,15 @@ It will send an email that looks something like this to your target email addres
 
 ![etrade email top](img/top_email_ex.png?raw=true "Title")
 ![etrade email bottom](img/bottom_email_ex.png?raw=true "Title")
+
+
+
+Running the following in Command Line will send you an email with statistics on volatility within the market for the current
+business day and pull together the largest moves in volatility, along with potentially profitable options positions.
+
+[`python3 dev_etrade_python_client.py -vo`](dev_etrade_python_client.py)
+
+It will look something like this: 
+![emon etrade volatility screener](/img/volatility-screener-email.png?raw=true "Title")
 
 Feel free to customize to your own personal use case. 

@@ -56,7 +56,9 @@ the assumption that the stock will revert at least the difference between the vo
 - Open up a conservative bearish position by scanning the options chain. 
 - Determine whether to short on long based on volume (for higher volume short *implying it's better to hold stocks with large volume* and long *implying it's better to **not** own stocks with lower volume*).
 
-### Send to your email using:
+Running the following in Command Line will send you an email with statistics on volatility within the market for the current
+business day and pull together the largest moves in volatility, along with potentially profitable options positions.
+
 [`python3 dev_etrade_python_client.py -vo`](../dev_etrade_python_client.py)
 
 It will look something like this: 
