@@ -1,6 +1,4 @@
-# E*TRADE API Python Sample Application
-
-This sample Python application provides examples on using the ETRADE API endpoints.
+# E*TRADE API Python Application
 
 ## Table of Contents
 

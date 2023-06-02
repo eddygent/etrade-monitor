@@ -13,7 +13,6 @@ import yfinance as yf
 from pretty_html_table import build_table
 import time
 
-#replace with the directory to your data path
 script_path = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH =  script_path + '/../data'
 # check if path exists. if it does not exist then create it.

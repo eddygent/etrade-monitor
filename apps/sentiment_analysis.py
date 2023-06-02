@@ -163,5 +163,6 @@ def main():
     # Read the input file into a dataframe
     df = pd.read_csv(input_file)
     focus = "AAPL"
-    result = generate_sentiment_summary_matrix(df, focus, analyze_sentiment=False)
+    result = generate_sentiment_summary_matrix(df, focus)
+    print(result)
 main()
