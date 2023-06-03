@@ -23,7 +23,6 @@ from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
 import apps.volatility
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
-from apps.volatility import *
 from apps.volatility_strategies import *
 
 import os
@@ -32,13 +31,6 @@ base = os.getcwd()
 level = logging.DEBUG
 fmt =  "[%(levelname)s] [dev_etrade_python_client.py] %(asctime)-15s %(message)s"
 logging.basicConfig(level=level, format=fmt)
-# logger = logging.getLogger('my_logger')
-# logger.setLevel(logging.INFO)
-# handler = RotatingFileHandler("python_client.log", maxBytes=5*1024*1024, backupCount=3)
-# FORMAT = "[%(levelname)s] %(asctime)-15s %(message)s"
-# fmt = logging.Formatter(FORMAT, datefmt='%m/%d/%Y %I:%M:%S %p')
-# handler.setFormatter(fmt)
-# logger.addHandler(handler)
 
 def oauth():
     """Allows user authorization for the sample application with OAuth 1"""

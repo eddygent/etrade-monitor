@@ -16,11 +16,10 @@ import etrade_config
 
 from transformers import GPT2Tokenizer, GPT2ForSequenceClassification
 
-# Load the pre-trained model
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-model = GPT2ForSequenceClassification.from_pretrained("gpt2")
-
 def predict_sentiment(text):
+    # Load the pre-trained model
+    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    model = GPT2ForSequenceClassification.from_pretrained("gpt2")
     # Encode the text
     encoded_text = tokenizer.encode(text, return_tensors="pt")
     # Predict the sentiment
@@ -158,11 +157,11 @@ def generate_sentiment_summary_matrix(df, focus, analyze_sentiment=True, analyze
         df['summary'] = summaries
     return df
 
-def main():
-    input_file = "reviews.csv"
-    # Read the input file into a dataframe
-    df = pd.read_csv(input_file)
-    focus = "AAPL"
-    result = generate_sentiment_summary_matrix(df, focus)
-    print(result)
-main()
+# def main():
+#     input_file = "reviews.csv"
+#     # Read the input file into a dataframe
+#     df = pd.read_csv(input_file)
+#     focus = "AAPL"
+#     result = generate_sentiment_summary_matrix(df, focus)
+#     print(result)
+# main()
