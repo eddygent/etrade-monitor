@@ -8,12 +8,12 @@ sys.path.insert(0, script_path + "/../")
 import etrade_config
 
 import requests
-from pprint import pprint
 
 API_KEY = etrade_config.PERIGON_API_KEY
 def _topics_query_(topics = ["TSLA","Tesla", "anything that says tesla"]):
       topics_query_search = []
       for titles in topics:
+            titles = titles.replace("&","%26")
             elem = "%20".join(titles.split(" "))
             topics_query_search.append(elem)
       split_by = "%20OR%20"
@@ -29,6 +29,6 @@ def discover_articles(title):
             f"&sortBy=relevance" \
             f"&page=0" \
             f"&size=10" \
-            f"&showReprints=true"
+            f"&showReprints=false"
       resp = requests.get(url)
       return resp.json()

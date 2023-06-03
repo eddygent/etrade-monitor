@@ -24,6 +24,7 @@ import etrade_config
 import apps.volatility
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
 from apps.volatility_strategies import *
+from apps.sentiment_analysis import *
 
 import os
 base = os.getcwd()
@@ -268,6 +269,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--StayLive", help="Keep Session Alive",
                         action="store_true")
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
+
+    parser.add_argument("-sa", "--sentimentAnalysis", help="Pass in Ticker to scrape 10 relevant and up-to-date articles and perform sentiment analysis - send email to target email.", type=str)
     parser.add_argument("-vo", "--volatilityOutliers", help=f"Send Volatility Outliers with current date: {TODAY} or what ever date you would like.", type=str, const=TODAY, nargs='?')
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
@@ -280,6 +283,8 @@ if __name__ == "__main__":
     # Process User inputs
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
+    if args.sentimentAnalysis:
+        scrape_articles_determine_sentiment_and_send_email(args.sentimentAnalysis)
     if args.volatilityOutliers:
         date = args.volatilityOutliers
         logging.info(f"Volatility Outliers for Date: {date}")
