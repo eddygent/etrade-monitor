@@ -185,7 +185,7 @@ def json_article_iterator(json):
         article_df['title'] = meta["title"]
         article_df['pubDate'] = meta['pubDate'][:10]
         article_df['url'] = meta['url']
-        article_df['perigon_sentiment'] = sentiment_bias(meta["sentiment"])
+        # article_df['perigon_sentiment'] = sentiment_bias(meta["sentiment"])
         article_df['Article'] = meta['content']
         # sentiment_dict = meta["sentiment"]
         new_row = pd.DataFrame(article_df, index=[i])
@@ -215,7 +215,8 @@ def scrape_articles_and_perform_analysis(ticker):
     yinfo = y.info
     shortname = yinfo['shortName']
     longname = yinfo['longName']
-    search_for = [ticker, shortname, longname]
+    # search_for = [ticker, shortname, longname]
+    search_for = [ticker]
     query = _topics_query_(search_for)
     json = discover_articles(query)
     df = json_article_iterator(json)
