@@ -215,8 +215,7 @@ def scrape_articles_and_perform_analysis(ticker):
     yinfo = y.info
     shortname = yinfo['shortName']
     longname = yinfo['longName']
-    # search_for = [ticker, shortname, longname]
-    search_for = [ticker]
+    search_for = [ticker, shortname, longname]
     query = _topics_query_(search_for)
     json = discover_articles(query)
     df = json_article_iterator(json)
