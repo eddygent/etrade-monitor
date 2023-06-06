@@ -1,5 +1,5 @@
 # Applications
-
+Haphazardly put together "applications" that I use for different reasons. I have no idea what I'm doing :D!
 ## Table of Contents
 
 * [Done](#done)
@@ -24,13 +24,24 @@
 **Relevant File(s):** `sentiment_analysis.py`
 
 **Relevant Function(s):** `generate_sentiment_summary_matrix(df, focus, 
-analyze_sentiment=True, analyze_summary=True)` 
+analyze_sentiment=True, analyze_summary=True)`, `scrape_articles_determine_sentiment_and_send_email(ticker)`
 
 **Description:** Done using OpenAI API. Generate a matrix of 
 sentiment analysis and summary for a given stock when passed a DataFrame of Articles.
 *For more information:* https://medium.com/data-and-beyond/sentiment-analysis-with-chatgpt-openai-and-python-use-chatgpt-to-build-a-sentiment-analysis-ai-2b89158a37f6
 
 ![emon sentiment analysis](../img/sentiment-analysis-snippet.png?raw=true "Title")
+
+**Note:** I'm not made of money, and for this reason, I do not plug sentiment analysis into the options volatility screener. I only use if I want to get
+the sentiment around a particular stock. 
+
+**More on Sentiment Analysis:** I'm really trying here as you can probably tell... but I did one more thing to *hopefully* make your
+life easier (if anyone at all is ever going to use this), run
+
+[`python3 dev_etrade_python_client.py -sa`](../dev_etrade_python_client.py)
+
+It will look something like this:
+![emon sentiment analysis email](../img/sentiment-analysis-email.png?raw=true "Title")
 
 ## Options Volatility Screener
 **Relevant File(s):** `volatility.py`,`volatility_strategies.py`,`yop.py`
