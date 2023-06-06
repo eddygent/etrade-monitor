@@ -18,6 +18,10 @@ import volatility
 BID = "Bid"
 LP = 'Last Price'
 STRIKE = 'Strike'
+
+def lastSymbolPrice(options_sym):
+    return yo.get_plain_option_ticker(option_ticker=options_sym)['Last Price'][0]
+
 def friday_after_days_out(days= 0, to_str = False):
     today = datetime.today() + timedelta(days=days)
     friday = today + timedelta( (4-today.weekday()) % 7 )
@@ -63,7 +67,3 @@ def get_last_price(ticker):
     sym = yf.Ticker(ticker)
     fi = sym.fast_info
     return fi['lastPrice']
-
-# chain = yo.get_chain_greeks_date(stock_ticker='TSLA', dividend_yield=1, option_type='p',
-#                                  expiration_date='2023-05-19',risk_free_rate=None)
-# print(chain)

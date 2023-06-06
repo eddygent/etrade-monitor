@@ -11,6 +11,7 @@ from firebase_admin import firestore
 import os
 import sys
 
+from datetime import datetime, timedelta
 script_path = os.path.dirname(os.path.abspath(__file__))
 script_path = script_path + '/../assets/emon-analytics-firebase-adminsdk-xwnpd-db7b006da2.json'
 cred = credentials.Certificate(script_path)
@@ -18,6 +19,7 @@ firebase_admin.initialize_app(cred)
 
 from volatility_strategies import *
 import random, string
+from yop import *
 
 
 db = firestore.client()
@@ -42,8 +44,8 @@ class GeneratedPosition:
         self.gain = None
         self.underlyingGain = None
 
-    def set_from_document(self, doc):
-        self.doc_ref = db.collection(u'GeneratedPositions')
+    def set_from_doc(self, doc):
+        self.doc_ref = db.collection('GeneratedPositions')
         self.ID = doc.id
         data = doc.to_dict()
         self.symbol = data['symbol']
@@ -61,26 +63,30 @@ class GeneratedPosition:
         try:
             existing_record = data['record']
         except Exception as e:
-            logging.DEBUG(f'record for {self.symbol} not initialized.')
-        self.record = existing_record
+            print(f'record for {self.symbol} not initialized.')
+            self.record = existing_record
+        else:
+            self.record = data['record']
 
         try: underlyingGain = data['underlyingGain']
         except Exception as e:
-            logging.DEBUG(f'underlyingGain for {self.symbol} not initialized.')
-            underlyingGain = 0
-        self.underlyingGain = underlyingGain
+            print(f'underlyingGain for {self.symbol} not initialized.')
+            self.underlyingGain = 0
+        else:
+            self.underlyingGain = underlyingGain
 
         try: gain = data['gain']
         except Exception as e:
-            logging.DEBUG(f'gain for {self.symbol} not initialized.')
-            gain = 0
-        self.gain = gain
+            print(f'gain for {self.symbol} not initialized.')
+            self.gain = 0
+        else: self.gain = gain
 
         try: exit = data['exit']
         except Exception as e:
-            logging.DEBUG(f'exit for {self.symbol} not initialized.')
-            exit = False
-        self.gain = exit
+            print(f'exit for {self.symbol} not initialized.')
+            self.exit = False
+        else: self.gain = exit
+
 
     def update_fields(self):
         # get the updated price and underlying of the ticker and symbol
@@ -88,7 +94,6 @@ class GeneratedPosition:
         self.gain = optionPrice - self.lastOptionPrice #notes lastOptionPrice is the first recorded option price
         self.underlyingGain = underlyingPrice - self.underlyingPrice
         self.exit = self.close_position(underlyingPrice)
-
         updated_data = {
                         'date': date,
                         'updatedOptionPrice': optionPrice,
@@ -97,29 +102,75 @@ class GeneratedPosition:
                         'underlyingGain':self.underlyingGain
                         }
         self.record[date] = updated_data
-        self.doc_ref.doc(self.doc_id).update({'record': self.record})
-        self.doc_ref.doc(self.doc_id).update({'gain': self.gain})
-        self.doc_ref.doc(self.doc_id).update({'underlyingGain': self.underlyingGain})
-        self.doc_ref.doc(self.doc_id).update({'exit': self.exit})
-        print(f'Updated GeneratedPositions:\n{self.doc_ref.doc(self.doc_id).to_dict()}')
+        self.doc_ref.document(self.ID).update({'record': self.record})
+        self.doc_ref.document(self.ID).update({'gain': self.gain})
+        self.doc_ref.document(self.ID).update({'underlyingGain': self.underlyingGain})
+        self.doc_ref.document(self.ID).update({'exit': self.exit})
+        print(f'Updated GeneratedPositions:\n{self.doc_ref.document(self.ID)}')
 
     def close_position(self, latestUnderlyingPrice):
+        if self.to_date() + timedelta(days=30) >= datetime.now():
+            print(f"CANNOT SELL YET - Can Sell on {self.to_date() + timedelta(days=30)}")
+            return False
         # if the underlying moves too much in a direction we don't want it to move
-        if (self.underlyingPrice / latestUnderlyingPrice) >= self.percMove/2:
+        close_position_formula = ((self.underlyingPrice / latestUnderlyingPrice)-1) >= self.percMove/2
+        print(f"[(({self.underlyingPrice} / {latestUnderlyingPrice})-1) >= {self.percMove}/2] === {close_position_formula}")
+        if close_position_formula:
             # if the position continues to slip further in the direction we don't want, close out
             return True
         return False
 
-
     def getUpdatedData(self):
-        pass
+        return TODAY, yf.Ticker(self.ticker).info['currentPrice'], lastSymbolPrice(self.symbol)
 
+    def __repr__(self):
+        return f"""
+        self.ID = {self.ID}
+        self.symbol = {self.symbol}
+        self.ticker = {self.ticker}
+        self.strike = {self.strike}
+        self.position = {self.position}
+        self.lastOptionPrice = {self.lastOptionPrice}
+        self.GenerationDate = {self.GenerationDate}
+        self.speculativePercMove = {self.speculativePercMove}
+        self.percMove = {self.percMove}
+        self.prevDayVolatility = {self.prevDayVolatility}
+        self.currDayVolatility = {self.currDayVolatility}
+        self.underlyingPrice = {self.underlyingPrice}
+        self.record = {self.record}
+        self.exit = {self.exit}
+        self.gain = {self.gain}
+        self.underlyingGain = {self.underlyingGain}
+                """
+
+    def __str__(self):
+        return f"""
+        ID = {self.ID}
+        symbol = {self.symbol}
+        ticker = {self.ticker}
+        strike = {self.strike}
+        lastOptionPrice = {self.lastOptionPrice}
+        position = {self.position}
+        GenerationDate = {self.GenerationDate}
+        speculativePercMove = {self.speculativePercMove}
+        percMove = {self.percMove}
+        prevDayVolatility = {self.prevDayVolatility}
+        currDayVolatility = {self.currDayVolatility}
+        underlyingPrice = {self.underlyingPrice}
+        record = {self.record}
+        exit = {self.exit}
+        gain = {self.gain}
+        underlyingGain = {self.underlyingGain}
+                """
+
+    def to_date(self):
+        return datetime.strptime(str(self.GenerationDate)[:10],"%Y-%m-%d")
 
 def generate_random_key():
     x = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
     return x
 
-def add_generated_position(date=TODAY):
+def add_generated_positions(date=TODAY):
     gen_pos_ref = db.collection(u'GeneratedPositions')
 
     df = vol_scraper_outliers_data(date, to_html=False)
@@ -134,7 +185,7 @@ def add_generated_position(date=TODAY):
         add_pos['strike'] = generated_position['Strike']
         add_pos['position'] = generated_position['Position']
         add_pos['lastOptionPrice'] = generated_position['Last Price']
-        add_pos['GenerationDate'] = datetime.strptime('2023-05-30', "%Y-%m-%d")
+        add_pos['GenerationDate'] = datetime.strptime(date, "%Y-%m-%d")
         add_pos['speculativePercMove'] = generated_position['speculativePercMove']
         add_pos['percMove'] = generated_position['percMove']
         add_pos['prevDayVolatility'] = generated_position['prevDayVolatility']
@@ -146,7 +197,7 @@ def add_generated_position(date=TODAY):
         except Exception as e:
             print(f"Error adding record. {e}")
         else:
-            print(f"Adding Record:\n{doc_ref}")
+            print(f"Adding Record:\n{add_pos}")
 
 def get_all_generated_positions():
     gen_pos_ref = db.collection(u'GeneratedPositions')
@@ -154,7 +205,14 @@ def get_all_generated_positions():
     for doc in docs:
         print(f'{doc.id} => {doc.to_dict()}')
 
-
+def get_generated_positions_obj():
+    gen_pos_ref = db.collection(u'GeneratedPositions')
+    docs = gen_pos_ref.stream()
+    for doc in docs:
+        p = GeneratedPosition()
+        p.set_from_doc(doc)
+        p.update_fields()
+        print(f'{doc.id} => {p}')
 def main():
-    add_generated_position('2023-05-30')
+    get_generated_positions_obj()
 main()

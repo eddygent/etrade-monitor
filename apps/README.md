@@ -8,12 +8,11 @@ Haphazardly put together "applications" that I use for different reasons. I have
 
 ## Done
 - [Sentiment Analysis using NLP](#sentiment-analysis)
-- [Options Volatility Screener/Volatility Screener for the exchange to find Outliers](#options-volatility-screener)
+- [Options Volatility Screener/Volatility Screener to find Outliers](#options-volatility-screener)
 - Generation of Neutral Strategies using Short Strangles
 
 ## ToDo
 - Fair Pricer for Stocks and Options (High, x Difficulty Unknown)
-- Grab the top 10 articles on a stock and put into DataFrame (High, 3)
 - Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
 - Volatility of Stock Since its purchase (Medium, 3 Difficulty)
 
