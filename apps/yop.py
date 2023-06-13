@@ -29,16 +29,20 @@ def friday_after_days_out(days= 0, to_str = False):
         return friday.strftime("%Y-%m-%d")
     return friday
 
-def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0):
+def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
     start = time.time()
     chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put, expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
     try:
         if chain.empty:
-            print(f"Error getting expiration date {friday_after_days_out(days, True)}, moving the days forward...")
-            chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7)
+            print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
+            if tries == 7:
+                print(f"Error getting the chain for: {ticker}")
+                print(f"Returning Empty Dataframe.")
+                return pd.DataFrame()
+            chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7, tries=tries+1)
         print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
     except AttributeError:
-        print(f"Error getting the chain for:\n{chain}")
+        print(f"Error getting the chain for: {ticker}")
         print(f"Returning Empty Dataframe.")
         return pd.DataFrame()
     return chain

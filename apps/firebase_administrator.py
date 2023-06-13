@@ -91,19 +91,22 @@ class GeneratedPosition:
     def update_fields(self):
         # get the updated price and underlying of the ticker and symbol
         date, underlyingPrice, optionPrice = self.getUpdatedData()
-        self.gain = optionPrice - self.lastOptionPrice #notes lastOptionPrice is the first recorded option price
+        gain = optionPrice - self.lastOptionPrice #notes lastOptionPrice is the first recorded option price
         self.underlyingGain = underlyingPrice - self.underlyingPrice
         self.exit = self.close_position(underlyingPrice)
         updated_data = {
                         'date': date,
                         'updatedOptionPrice': optionPrice,
                         'updatedUnderlyingPrice': underlyingPrice,
-                        'gain': self.gain,
+                        'gain': gain,
                         'underlyingGain':self.underlyingGain
                         }
         self.record[date] = updated_data
+        print(self.record)
+        for rec in self.record:
+            print(self.record[rec])
         self.doc_ref.document(self.ID).update({'record': self.record})
-        self.doc_ref.document(self.ID).update({'gain': self.gain})
+        self.doc_ref.document(self.ID).update({'gain': gain})
         self.doc_ref.document(self.ID).update({'underlyingGain': self.underlyingGain})
         self.doc_ref.document(self.ID).update({'exit': self.exit})
         print(f'Updated GeneratedPositions:\n{self.doc_ref.document(self.ID)}')
@@ -170,11 +173,10 @@ def generate_random_key():
     x = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
     return x
 
-def add_generated_positions(date=TODAY):
+def add_generated_positions(date=TODAY, df=pd.DataFrame()):
     gen_pos_ref = db.collection(u'GeneratedPositions')
-
-    df = vol_scraper_outliers_data(date, to_html=False)
-    print(df)
+    if df.empty:
+        df = vol_scraper_outliers_data(date, to_html=False)
 
     positions_dict = df.to_dict(orient='index')
     for generated_position in positions_dict.values():
@@ -187,7 +189,7 @@ def add_generated_positions(date=TODAY):
         add_pos['lastOptionPrice'] = generated_position['Last Price']
         add_pos['GenerationDate'] = datetime.strptime(date, "%Y-%m-%d")
         add_pos['speculativePercMove'] = generated_position['speculativePercMove']
-        add_pos['percMove'] = generated_position['percMove']
+        add_pos['percMove'] = generated_position['percMove']*-1
         add_pos['prevDayVolatility'] = generated_position['prevDayVolatility']
         add_pos['currDayVolatility'] = generated_position['volatility']
         add_pos['underlyingPrice'] = generated_position['lastPrice']
@@ -211,8 +213,13 @@ def get_generated_positions_obj():
     for doc in docs:
         p = GeneratedPosition()
         p.set_from_doc(doc)
-        p.update_fields()
+        try:
+            p.update_fields()
+        except Exception as e:
+            print(f"Error: {e}. Continuing")
         print(f'{doc.id} => {p}')
-def main():
-    get_generated_positions_obj()
-main()
+# def main():
+#     add_generated_positions()
+#     get_generated_positions_obj()
+# main()
+# get_generated_positions_obj()

@@ -110,9 +110,12 @@ def generate_positions(df, to_html = False):
 
 def vol_scraper_outliers_data(date=TODAY, to_html = True):
 
-    filename = f'voldata/volatility_scanner_result_{date}_3mo.csv'
+    convert_date = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
+    filename = f'voldata/volatility_scanner_result_{convert_date}_3mo.csv'
     filepath = os.path.join(DATA_PATH, filename)
+    logging.info(f"Searching for: {filepath}... {os.path.exists(filepath)}")
     if os.path.exists(filepath):
+        logging.info("Path Exists... Opening file")
         df = pd.read_csv(filepath)
         df = df[~df['ticker'].isin(EXCLUDE)]
         find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df)

@@ -180,6 +180,7 @@ def sentiment_bias(sentiment_dict):
 
 def json_article_iterator(json):
     df = pd.DataFrame(columns=['title', 'pubDate', 'url', 'perigon_sentiment', 'Article'])
+    print(json)
     for i, meta in enumerate(json['articles']):
         article_df = {}
         article_df['title'] = meta["title"]

@@ -24,7 +24,7 @@ def discover_articles(title):
       two_days_ago = datetime.now() - timedelta(days=1)
       date_formatted = two_days_ago.strftime("%Y-%m-%d")
       url = f"https://api.goperigon.com/v1/all?apiKey={API_KEY}" \
-            f"?category=Business" \
+            f"&category=Business" \
             f"&title={title}" \
             f"&from={date_formatted}" \
             f"&sortBy=relevance" \

@@ -25,6 +25,7 @@ import apps.volatility
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
 from apps.volatility_strategies import *
 from apps.sentiment_analysis import *
+from apps.firebase_administrator import *
 
 import os
 base = os.getcwd()
@@ -179,9 +180,16 @@ def vol_outliers_email(date):
         logging.debug(f"Whoops, hit {e}. Trying to re run in 90 seconds.")
         time.sleep(90)
         msg,pos = vol_scraper_outliers_data(date)
-        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}",
+                             receiver_email=etrade_config.receiver_email)
+        add_generated_positions(df=pos)
+        get_generated_positions_obj()
     else:
-        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}", receiver_email=etrade_config.receiver_email)
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}",
+                             receiver_email=etrade_config.receiver_email)
+        add_generated_positions(df=pos)
+        get_generated_positions_obj()
+
 
 def start_session():
     logging.info(f"start_session() @ {datetime.now()} on host: {socket.gethostname()}")
