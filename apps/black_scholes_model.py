@@ -184,44 +184,8 @@ def visualize_impl_vs_real(option_chain):
     ax.set_facecolor("black")
     plt.show()
 
-def main():
-    # # inputs
-    # undprice = 16.06  # S
-    # strike = 16  # K
-    # time = 24  # time until expiration in days
-    #
-    # sigma = .038  # Standard Deviation of stock's returns
-    # divrate = 0  # Dividend yield on stock
-    # print(black_scholes_price(S=undprice, K=strike, time=time, sigma=sigma))
-    #
-    # ticker = 'T'
-    # targetPrice = 16.37
-    # option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=targetPrice, call_or_put='c',
-    #                                                                   days=30, long=True)
-    # ticker = option_chain.iloc[0]['Underlying']
-    # bspricer = black_scholes_ticker_symbol(ticker, option_chain, targetPrice)
-    # print(bspricer)
-    # print(bspricer.columns)
-    # opt = black_scholes_option_pricer('T', 16.37)
-    # print(opt)
-    t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
-    visualize_impl_vs_real(t_chain)
-    # print(t_chain)
-    # print(t_chain.columns)
-    # t_chain = black_scholes_pricer_entire_chain(t_chain)
-    # print(t_chain)
-    # plt.figure()
-    # plt.title("T")
-    # cols = ['BS_Call', 'Last Price']
-    # colors = ['red', 'blue']
-    # line_style = ['-.', '-']
-    # for idx, col in enumerate(cols):
-    #     plt.plot(t_chain['Strike'], t_chain[col], color=colors[idx], linestyle=line_style[idx])
-    # plt.xlabel("Strikes", fontweight='bold')
-    # plt.ylabel("Price", fontweight='bold')
-    #
-    # ax = plt.gca()
-    # ax.set_facecolor("black")
-    #
-    # plt.show()
-main()
+# def main():
+#     # visualize black scholes
+#     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
+#     visualize_impl_vs_real(t_chain)
+# main()
