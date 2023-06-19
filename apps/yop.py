@@ -19,20 +19,34 @@ BID = "Bid"
 LP = 'Last Price'
 STRIKE = 'Strike'
 def lastSymbolPrice(options_sym):
+    '''
+    get the last symbol price given a options symbol
+
+    TODO: Make faster by passing in the option symbol base to get the last price using yfinance.Ticker.options
+    '''
     return yo.get_plain_option_ticker(option_ticker=options_sym)['Last Price'][0]
 
 def friday_after_days_out(days= 0, to_str = False):
+    '''
+    return the friday after days out
+    '''
     today = datetime.today() + timedelta(days=days)
     friday = today + timedelta( (4-today.weekday()) % 7 )
     if to_str:
         return friday.strftime("%Y-%m-%d")
     return friday
 
-def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
+def _get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
+    '''
+    Get the friday options chain given a ticker and date - not used at the moment
+
+    return df with options chain for either call or put
+    '''
     start = time.time()
     try:
-        chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put,
-                                         expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
+        # chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put,
+        #                                  expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
+        chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
         if chain.empty:
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
             if tries == 14:
@@ -48,6 +62,9 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
     return chain
 
 def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
+    '''
+    get the chain for either calls or puts using yfinance.Ticker.option_chain lib and return for usage
+    '''
     ticker = yf.Ticker(stock_ticker)
 
     opt = ticker.option_chain(expiration_date)
@@ -58,10 +75,13 @@ def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
     return opt
 
 def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
+    '''
+    Get the friday options chain given a ticker and date
+
+    return df with options chain for either call or put
+    '''
     start = time.time()
     try:
-        # chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put,
-                                        # expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
         chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
         if chain.empty:
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
@@ -81,12 +101,15 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
     except Exception as e:
         print(f"In the original Form: {chain.columns}")
     chain['date'] = friday_after_days_out(days, True)
+    if call_or_put == 'c': chain['call_or_put'] = 'CALL'
+    else: chain['call_or_put'] == 'PUT'
+    chain['Underlying'] = ticker
     return chain
 
 def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330, call_or_put = 'c' , days = 0, long=True):
-    # tick = yf.Ticker(ticker)
-    # price = tick.fast_info['lastPrice']
-    # print(price)
+    '''
+    Get friday option for ticker and date closest to given price
+    '''
     try:
         chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
     except IndexError:
@@ -105,6 +128,9 @@ def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330
         return pd.DataFrame()
     abs_diff = abs(price-strike)
     chain = chain[chain['Strike'].between(price-abs_diff, price+abs_diff)]
+    # drop unused columns
+    chain = chain.drop(['contractSize', 'currency', 'change', 'percentChange', 'Last Trade'], axis=1)
+    chain['Underlying'] = ticker
     if (long and call_or_put == 'c') or (not long and call_or_put == 'p'):
         # return conservative bull position
         return chain.head(1)
