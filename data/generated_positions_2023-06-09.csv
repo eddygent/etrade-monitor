@@ -1,0 +1,4 @@
+,Symbol,Last Trade,Strike,Last Price,Bid,Ask,Change,% Change,Volume,Open Interest,Impl. Volatility,Position,Ticker,percMove,speculativePercMove,prevDayVolatility,volatility,lastPrice
+0,PL230721C00002500,2023-06-09 03:55:24 pm,2.5,1.0,0.85,1.0,-1.4200001,-58.677685,204.0,462.0,0.57812921875,Long Call,PL,0.3,0.06,0.28,0.46,3.41
+0,BARK230721P00002500,2023-06-02 11:31:25 am,2.5,1.41,0.9,1.35,0.0,0.0,1.0,0.0,2.5312536718749996,Long Put,BARK,-0.2,-0.01,0.29,0.34,1.37
+0,DBD230721P00002500,2023-05-26 10:50:19 am,2.5,2.3,0.0,0.0,0.0,0.0,3.0,4.0,1.0000000000000003e-05,Long Put,DBD,-8.26,-0.9999,3.08,3.21,0.25

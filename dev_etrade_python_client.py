@@ -26,6 +26,7 @@ from apps.email_summary import send_email_with_data, get_accounts_hold, account_
 from apps.volatility_strategies import *
 from apps.sentiment_analysis import *
 from apps.firebase_administrator import *
+from apps.black_scholes_model import *
 
 import os
 base = os.getcwd()
@@ -283,12 +284,36 @@ if __name__ == "__main__":
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
+    parser.add_argument("-bsp", "--blackScholesPricer", help="BlackScholesPricer - input is 'TICKER,TARGET PRICE, 'c' for call, and 'p' for put',days out", type=str, const='take input', nargs='?')
+
     args = parser.parse_args()
     if args.Email or args.canSell or args.StayLive:
         session, base_url = oauth()
         accounts = load_accounts(session, base_url)
 
     # Process User inputs
+    if args.blackScholesPricer:
+        # add strike
+        if args.blackScholesPricer == 'take input':
+            ticker = input('Ticker: ')
+            target_price = input('Target Price: ')
+            strike = input('Strike: ')
+            call_or_put = input('Call or Put (c or p): ')
+            days_out = input("Days out: ")
+        else:
+            ticker,strike,target_price,call_or_put,days_out = args.blackScholesPricer.split(',')
+
+        if strike == "": strike = None
+        else: strike = float(strike)
+
+        target_price = float(target_price)
+        days_out = int(days_out)
+        print(black_scholes_option_pricer(ticker, target_price, strike=strike, call_or_put=call_or_put, days=days_out))
+        visualize = input("Visualize? (y or n): ")
+
+        if visualize == 'y':
+            opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days_out)
+            visualize_impl_vs_real(opt_chain)
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
     if args.sentimentAnalysis:

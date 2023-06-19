@@ -102,7 +102,8 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
         print(f"In the original Form: {chain.columns}")
     chain['date'] = friday_after_days_out(days, True)
     if call_or_put == 'c': chain['call_or_put'] = 'CALL'
-    else: chain['call_or_put'] == 'PUT'
+    elif call_or_put == 'p':
+        chain['call_or_put'] == 'PUT'
     chain['Underlying'] = ticker
     return chain
 

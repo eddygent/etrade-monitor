@@ -140,9 +140,13 @@ def black_scholes_ticker_symbol(ticker, option_chain, targetPrice):
 
     return option_chain
 
-def black_scholes_option_pricer(ticker, target_price, days=30):
-    option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=target_price, call_or_put='c',
+def black_scholes_option_pricer(ticker, target_price, call_or_put, strike=None, days=30):
+    if strike == None:
+        option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=target_price, call_or_put=call_or_put,
                                                                       days=days, long=True)
+    else:
+        chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
+        option_chain = chain[ chain['Strike'] == strike]
     ticker = option_chain.iloc[0]['Underlying']
     bspricer = black_scholes_ticker_symbol(ticker, option_chain, target_price)
     return bspricer
@@ -185,7 +189,11 @@ def visualize_impl_vs_real(option_chain):
     plt.show()
 
 # def main():
-#     # visualize black scholes
-#     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
-#     visualize_impl_vs_real(t_chain)
+# #     # price an option
+#     ticker = 'T'
+#     target_price = 16.37
+#     print(black_scholes_option_pricer(ticker, target_price, call_or_put='c', days=30))
+# #     # visualize black scholes
+# #     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
+# #     visualize_impl_vs_real(t_chain)
 # main()
