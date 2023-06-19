@@ -15,6 +15,8 @@ import time
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH =  script_path + '/../data'
+
+RATE = .0525  # Annualized risk free rate
 # check if path exists. if it does not exist then create it.
 if not os.path.exists(DATA_PATH):
     print("MAKING NEW DIR FOR DATA")
@@ -195,7 +197,8 @@ def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):
     data = y.history(period=time_period)
     time_period = data.shape[0]
 
-    curr_day = y.info['currentPrice']
+    # curr_day = y.info['currentPrice']
+    curr_day = y.fast_info['lastPrice']
     prev_day = data.iloc[-2].loc['Close']
 
     diff_days = curr_day/prev_day-1
@@ -212,14 +215,107 @@ def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):
     prev_day_volatility = prev_day_data['Log returns'].std() * np.sqrt(time_period-1)
 
     df = pd.DataFrame(columns=HEADER)
-    df.loc[0] = [ticker, y.info['currentPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
+    df.loc[0] = [ticker, y.fast_info['lastPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
+    # df.loc[0] = [ticker, y.info['currentPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
     return df
 
-# def liz():
-#     filename = f'voldata/volatility_scanner_result_{TODAY}.csv'
-#     filepath = os.path.join(DATA_PATH,filename)
+import math
+from scipy.stats import norm
+
+def american_black_scholes_price(S, K, r, T, sigma):
+    """
+    Calculates the price of an American call option using the Black-Scholes model.
+
+    Args:
+    S: The spot price of the underlying asset.
+    K: The strike price of the option.
+    r: The risk-free interest rate.
+    T: The time to expiration of the option.
+    sigma: The volatility of the underlying asset.
+
+    Returns:
+    The price of the American option.
+    """
+
+    d1 = (math.log(S / K) + (r + sigma ** 2 / 2) * T) / sigma * math.sqrt(T)
+    d2 = d1 - sigma * math.sqrt(T)
+
+#Black Scholes Option Tool by Brian Hyde
+
+from math import sqrt, exp, log, erf
+
+from decimal import *
+getcontext().prec = 5
+
+def black_scholes_price(S, K, time, sigma, divrate=0):
+    #statistics
+    sigTsquared = sqrt(Decimal(time)/365)*sigma
+    edivT = exp((-divrate*time)/365)
+    ert = exp((-RATE*time)/365)
+    d1 = (log(S*edivT/K)+(RATE+.5*(sigma**2))*time/365)/sigTsquared
+    d2 = d1-sigTsquared
+    Nd1 = (1+erf(d1/sqrt(2)))/2
+    Nd2 = (1+erf(d2/sqrt(2)))/2
+    iNd1 = (1+erf(-d1/sqrt(2)))/2
+    iNd2 = (1+erf(-d2/sqrt(2)))/2
+
+    #Outputs
+    callPrice = round(S*edivT*Nd1-K*ert*Nd2, 2)
+    putPrice = round(K*ert*iNd2-S*edivT*iNd1, 2)
+    return {"call:": callPrice, "put": putPrice}
+
+def count_business_days(start_date, end_date):
+  """Counts the number of business days between two dates.
+
+  Args:
+    start_date: The start date.
+    end_date: The end date.
+
+  Returns:
+    The number of business days between the two dates.
+  """
+
+  business_days = 0
+  while start_date <= end_date:
+    if start_date.weekday() < 5:
+      business_days += 1
+    start_date += timedelta(days=1)
+
+  return business_days
+
+def black_scholes_ticker_symbol(ticker, option_chain, targetPrice):
+    underlyingPrice = yf.Ticker(ticker).fast_info['lastPrice']
+    sigma = abs(((targetPrice/underlyingPrice)-1)*2) # the volatility we expect
+    strike = option_chain.iloc[0]['Strike']
+    start_date = datetime.strptime(TODAY,'%Y-%m-%d')
+    expiry_date = datetime.strptime(option_chain.iloc[0]['date'], '%Y-%m-%d')
+    time = count_business_days(start_date, expiry_date) # count business days
+    bsp = black_scholes_price(underlyingPrice,strike,time, sigma=sigma)
+    bsp['ticker'] = ticker
+    bsp['strike'] = strike
+    bsp['sigma'] = sigma
+    bsp['targetPrice'] = targetPrice
+    return bsp
+
+
+# #Operations
+# print("")
+# print("Call Price = " + str(callPrice) )
+# print("Put Price = " + str(putPrice) )
+
+def main():
+    # inputs
+    undprice = 16.06  # S
+    strike = 16  # K
+    time = 24  # time until expiration in days
+
+    sigma = .038  # Standard Deviation of stock's returns
+    divrate = 0  # Dividend yield on stock
+    print(black_scholes_price(S=undprice, K=strike, time=time, sigma=sigma))
+#     # import yfinance as yf  # Import yahoo finance module
+#     # tesla = yf.Ticker("TSLA")  # Passing Tesla Inc. ticker
+#     #
+#     # opt = tesla.option_chain('2023-06-23')  # retreiving option chains data for 17 June 2022
+#     # print(opt.calls.columns)
 #
-#     df = pd.read_csv(filepath)
-#     # print(f'filter using hypothesis:\n{filter_vol_df_find_outliers(df, volume=1000000)}')
-#     print(f'filter using volatility:\n{filter_vol_df_find_vol(df, volume=1000000)}')
-# liz()
+main()

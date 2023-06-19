@@ -124,7 +124,8 @@ class GeneratedPosition:
         return False
 
     def getUpdatedData(self):
-        return TODAY, yf.Ticker(self.ticker).info['currentPrice'], lastSymbolPrice(self.symbol)
+        # return TODAY, yf.Ticker(self.ticker).info['currentPrice'], lastSymbolPrice(self.symbol)
+        return TODAY, yf.Ticker(self.ticker).fast_info['lastPrice'], lastSymbolPrice(self.symbol)
 
     def __repr__(self):
         return f"""
@@ -217,6 +218,7 @@ def get_generated_positions_obj():
             p.update_fields()
         except Exception as e:
             print(f"Error: {e}. Continuing")
+            continue
         print(f'{doc.id} => {p}')
 # def main():
 #     add_generated_positions()

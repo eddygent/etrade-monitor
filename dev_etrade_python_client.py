@@ -180,12 +180,12 @@ def vol_outliers_email(date):
         logging.debug(f"Whoops, hit {e}. Trying to re run in 90 seconds.")
         time.sleep(90)
         msg,pos = vol_scraper_outliers_data(date)
-        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}",
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date}",
                              receiver_email=etrade_config.receiver_email)
         add_generated_positions(df=pos)
         get_generated_positions_obj()
     else:
-        send_email_with_data(msg, subject=f"EMon: Volatility Outliers Job {date}",
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date}",
                              receiver_email=etrade_config.receiver_email)
         add_generated_positions(df=pos)
         get_generated_positions_obj()
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--canSell", help="Can Sell Ticker", type=str)
 
     parser.add_argument("-sa", "--sentimentAnalysis", help="Pass in Ticker to scrape 10 relevant and up-to-date articles and perform sentiment analysis - send email to target email.", type=str)
-    parser.add_argument("-vo", "--volatilityOutliers", help=f"Send Volatility Outliers with current date: {TODAY} or what ever date you would like.", type=str, const=TODAY, nargs='?')
+    parser.add_argument("-vo", "--volatilityOutliers", help=f"Send Volatility Outliers with current date: {datetime.strptime(TODAY,'%Y-%m-%d').strftime('%Y%m%d')} or what ever date you would like.", type=str, const=datetime.strptime(TODAY,'%Y-%m-%d').strftime('%Y%m%d'), nargs='?')
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 

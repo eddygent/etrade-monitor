@@ -18,7 +18,6 @@ import volatility
 BID = "Bid"
 LP = 'Last Price'
 STRIKE = 'Strike'
-
 def lastSymbolPrice(options_sym):
     return yo.get_plain_option_ticker(option_ticker=options_sym)['Last Price'][0]
 
@@ -31,11 +30,12 @@ def friday_after_days_out(days= 0, to_str = False):
 
 def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
     start = time.time()
-    chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put, expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
     try:
+        chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put,
+                                         expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
         if chain.empty:
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
-            if tries == 7:
+            if tries == 14:
                 print(f"Error getting the chain for: {ticker}")
                 print(f"Returning Empty Dataframe.")
                 return pd.DataFrame()
@@ -47,20 +47,64 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
         return pd.DataFrame()
     return chain
 
+def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
+    ticker = yf.Ticker(stock_ticker)
+
+    opt = ticker.option_chain(expiration_date)
+    if option_type == 'c':
+        opt = opt.calls
+    else:
+        opt = opt.puts
+    return opt
+
+def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
+    start = time.time()
+    try:
+        # chain = yo.get_chain_greeks_date(stock_ticker=ticker, dividend_yield=None, option_type=call_or_put,
+                                        # expiration_date=friday_after_days_out(days, True), risk_free_rate=None)
+        chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
+        if chain.empty:
+            print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
+            if tries == 14:
+                print(f"Error getting the chain for: {ticker}")
+                print(f"Returning Empty Dataframe.")
+                return pd.DataFrame()
+            chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7, tries=tries+1)
+        print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
+    except AttributeError:
+        print(f"Error getting the chain for: {ticker}")
+        print(f"Returning Empty Dataframe.")
+        return pd.DataFrame()
+    # rename columns to match that of the previous
+    try:
+        chain = chain.rename(columns={'lastPrice': 'Last Price', 'bid': 'Bid','ask':'Ask', 'volume':'Volume', 'openInterest': 'Open Interest', 'contractSymbol':'Symbol', 'impliedVolatility': 'Implied Volatility', 'lastTradeDate':'Last Trade', 'strike':'Strike'})
+    except Exception as e:
+        print(f"In the original Form: {chain.columns}")
+    chain['date'] = friday_after_days_out(days, True)
+    return chain
+
 def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330, call_or_put = 'c' , days = 0, long=True):
+    # tick = yf.Ticker(ticker)
+    # price = tick.fast_info['lastPrice']
+    # print(price)
     try:
         chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
     except IndexError:
         print("IndexError with", ticker)
         return pd.DataFrame()
     try:
-        print(chain)
-        strike = min(chain['Strike'].values, key=lambda x: abs(price-x))
+        # return the options strike with value closest to target price
+        strike = None
+        diff = float('inf')
+        for K in chain['Strike'].values:
+            if abs(price-K) < diff:
+                diff = abs(price-K)
+                strike = K
     except Exception as e:
         print(f"Error, {e}, Unable to get Options Chain for: {ticker}")
         return pd.DataFrame()
     abs_diff = abs(price-strike)
-    chain = chain[chain['Strike'].between(abs_diff - price, price+abs_diff)]
+    chain = chain[chain['Strike'].between(price-abs_diff, price+abs_diff)]
     if (long and call_or_put == 'c') or (not long and call_or_put == 'p'):
         # return conservative bull position
         return chain.head(1)
@@ -71,3 +115,6 @@ def get_last_price(ticker):
     sym = yf.Ticker(ticker)
     fi = sym.fast_info
     return fi['lastPrice']
+
+# print(get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0))
+# print(get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=400, call_or_put = 'c' , days = 0, long=True))

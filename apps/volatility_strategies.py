@@ -12,6 +12,10 @@ sys.path.insert(0, script_path)
 from volatility import *
 from yop import *
 from pretty_html_table import build_table
+from email_summary import send_email_with_data
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(script_path, ".."))
+import etrade_config
 
 EXCLUDE = pd.read_csv(os.path.join(DATA_PATH, 'exclude.csv'))['ticker'].values
 
@@ -42,7 +46,7 @@ def filter_vol_all_symbols_find_outliers(volatility_time_period='3mo',  volume =
         Look for Symbols with yesterday's move greater than or equal to perc_move avg volatility within time period.
     '''
     ret_str = f"Symbols with yesterday's move greater than or equal to the average volatility within {volatility_time_period} time period, and avg volume over given period of time greater than {'{:.2f} M'.format(float(volume)/1000000)}."
-    dataframe = get_latest_vol_df(volatility_time_period) if dataframe.empty else dataframe
+    dataframe = get_latest_vol_df(volatility_time_period)
     df = dataframe.copy()
     df = df[(abs(df['percentMove']) >= df['prevDayVolatility']) & (df['avgVolume'] > volume) ]
     df['speculativePercMove'] = df.apply(lambda row : speculate_percent_move(row['percentMove'], row['volatility'], row['prevDayVolatility']), axis = 1)
@@ -67,7 +71,7 @@ def filter_vol_all_symbols_find_vol(volatility_time_period='3mo', perc_move=.15,
         greater than volume and avg volatility less than avg_vol.
     '''
     ret_str = f"Symbols with yesterday's move greater than percentage move {perc_move}, avg volume over given period of time greater than {'{:.2f} M'.format(float(volume)/1000000)}, and avg volatility less than {avg_vol}; an outlier with relatively low volatility."
-    dataframe = get_latest_vol_df(volatility_time_period) if dataframe.empty else dataframe
+    dataframe = get_latest_vol_df(volatility_time_period)
     df = dataframe.copy()
     df = df[(abs(df['percentMove'])  >= perc_move) & (df['prevDayVolatility']<avg_vol) & (df['avgVolume'] > volume)]
     df['speculativePercMove'] = df.apply(lambda row : speculate_percent_move(row['percentMove'], row['volatility'], row['prevDayVolatility']), axis = 1)
@@ -92,7 +96,6 @@ def generate_positions(df, to_html = False):
     positions = pd.DataFrame()
     for index, row in df.iterrows():
         determined_position = determine_position(row['ticker'], row['percentMove'], row['specPrice'], row['avgVolume'])
-
         determined_position['speculativePercMove'] = row['speculativePercMove']
         determined_position['prevDayVolatility'] = row['prevDayVolatility']
         determined_position['volatility'] = row['volatility']
@@ -103,7 +106,8 @@ def generate_positions(df, to_html = False):
     positions = positions.reset_index()
     if to_html:
         html_positions = positions.copy()[
-            ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Impl. Volatility']]
+            ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Impl. Volatility']
+        ]
         html_positions = html_positions.reset_index(drop=True)
         return build_table(html_positions, 'blue_light'), positions
     return positions
@@ -130,19 +134,32 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
     # concat and find unique
     df = pd.concat([vol_res, vol_out])
     df = df.drop_duplicates(ignore_index=True)
-    positions_html, positions = generate_positions(df, to_html = True)
-    s = f"<h1>Volatility Outliers: {date}</h1>"
-    s += str_vol + "<br>"
-    s += find_vol + "<br>"
-    s += str_out + "<br>"
-    s += find_out
-    s += "<em>Note: If the percent move is greater than 198% the speculative percentage move is defaulted to -0.99 and further investigation is suggested.</em>"
-    s += "<h2>Options Positions</h2>"
-    s += positions_html
-    s += "<em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>"
+    # send an email with the volatility outliers before generating positions in the event generate positions fails
+    volatility_outliers_email = \
+        f"""
+            <h1>Volatility Outliers: {date}</h1>
+                {str_vol}<br>
+                {find_vol}<br>
+                {str_out}<br>
+                {find_out}<br>
+                <em>Note: If the percent move is greater than 198% the speculative percentage move is defaulted to -0.99 and further investigation is suggested.</em>
+            """
+    send_email_with_data(volatility_outliers_email, subject=f"EMon: Volatility Outliers Job {date}",
+                         receiver_email=etrade_config.receiver_email)
+    try:
+        positions_html, positions = generate_positions(df, to_html = True)
+    except Exception as e:
+        logging.info(f'WE HIT AN EXCEPTION WHILE GENERATING POSITIONS: \n{e}')
+        positions_html,positions = "Exception hit while generating positions.", pd.DataFrame()
+    volatility_outliers_email_with_positions = volatility_outliers_email + \
+        f""" 
+        <h2>Options Positions</h2>
+        {positions_html}
+        <em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>
+        """
     if to_html:
-        print(s, positions)
-        return s, positions
+        print(volatility_outliers_email_with_positions, positions)
+        return volatility_outliers_email_with_positions, positions
     else:
         return positions
 
@@ -167,8 +184,13 @@ def determine_position(ticker, perc_move, spec_price, volume):
             call_or_put = 'c'
             long = False
             position = 'Short Call'
-    chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=spec_price, call_or_put=call_or_put, days=30, long=long)
+    try:
+        chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=spec_price, call_or_put=call_or_put, days=30, long=long)
+    except Exception as e:
+        logging.info(f'HIT EXCEPTION WHILE GETTING FRIDAY OPTIONS FOR DATE CLOSEST TO PRICE!!!\n{e}')
+        chain = pd.DataFrame()
     if chain.empty:
+        logging.info(f'Unable to get Options Chain for {ticker}.')
         return chain
     print("Adding",position,ticker,"Options Strat")
     chain['Position'] = position
