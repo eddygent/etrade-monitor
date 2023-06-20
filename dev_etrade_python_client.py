@@ -330,7 +330,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
-    parser.add_argument("-bsp", "--blackScholesPricer", help="BlackScholesPricer - input is 'TICKER,TARGET PRICE, 'c' for call, and 'p' for put',days out", type=str, const='take input', nargs='?')
+    parser.add_argument("-bsp", "--blackScholesPricer", help="BlackScholesPricer - input is 'TICKER,TARGET PRICE, 'c' for call, and 'p' for put',days out,'l' for long and 's' for short", type=str, const='take input', nargs='?')
 
     args = parser.parse_args()
     if args.Email or args.canSell or args.StayLive:
