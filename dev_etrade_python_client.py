@@ -223,6 +223,52 @@ def email_volatility(vol_args):
         return False
 
 
+def black_scholes_input(blackScholesPricer):
+    if blackScholesPricer == 'take input':
+        ticker = input('Ticker: ')
+        print("Note: If you would like to use the volatility time until expiry days back (volatility [Time until Expiry - Today] days back), leave empty.")
+        target_price = input('Target Price: ')
+        print("Note: If you would like to generate a strike closest to your target price, leave empty.")
+        strike = input('Strike: ')
+        call_or_put = input('Call or Put (c or p): ')
+        print("Note: If you would like to default to 30 days, leave empty.")
+        days_out = input("Days out: ")
+        print("Note: If you would like to default to long, leave empty.")
+
+        long = input("Long 'l' or 's': ")
+        if long == 'l' or long == '': long = True
+        else: long = False
+    else:
+        ticker, strike, target_price, call_or_put, days_out,long = blackScholesPricer.split(',')
+        if long == 'l' or long == '': long = True
+        else: long = False
+
+    # clean up strike
+    if strike == "":
+        strike = None
+    else:
+        strike = float(strike)
+
+    # clean up target price
+    if target_price == "":
+        target_price = None
+    else:
+        target_price = float(target_price)
+
+    # clean up days out
+    if days_out == "":
+        days_out = 30
+    else:
+        days_out = int(days_out)
+    print(black_scholes_option_pricer(ticker=ticker, call_or_put=call_or_put, target_price=target_price, strike=strike,
+                                      days=days_out, long=long))
+    visualize = input("Visualize? (y or n): ")
+
+    if visualize == 'y':
+        opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days_out, long=long)
+        visualize_impl_vs_real_combined(opt_chain)
+
+
 if __name__ == "__main__":
     logging.info(f"Runtime: {datetime.now()}")
 
@@ -294,26 +340,7 @@ if __name__ == "__main__":
     # Process User inputs
     if args.blackScholesPricer:
         # add strike
-        if args.blackScholesPricer == 'take input':
-            ticker = input('Ticker: ')
-            target_price = input('Target Price: ')
-            strike = input('Strike: ')
-            call_or_put = input('Call or Put (c or p): ')
-            days_out = input("Days out: ")
-        else:
-            ticker,strike,target_price,call_or_put,days_out = args.blackScholesPricer.split(',')
-
-        if strike == "": strike = None
-        else: strike = float(strike)
-
-        target_price = float(target_price)
-        days_out = int(days_out)
-        print(black_scholes_option_pricer(ticker, target_price, strike=strike, call_or_put=call_or_put, days=days_out))
-        visualize = input("Visualize? (y or n): ")
-
-        if visualize == 'y':
-            opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days_out)
-            visualize_impl_vs_real(opt_chain)
+        black_scholes_input(args.blackScholesPricer)
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
     if args.sentimentAnalysis:

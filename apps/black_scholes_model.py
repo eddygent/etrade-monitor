@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import os
 import sys
 import yfinance as yf
-from volatility import TODAY
+from volatility import TODAY, ticker_volatility_matrix_with_time_period_df
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path + '/../')
@@ -75,7 +75,7 @@ def black_scholes_price_date(S, K, date, sigma, divrate=0):
     #Outputs
     callPrice = round(S*edivT*Nd1-K*ert*Nd2, 2)
     putPrice = round(K*ert*iNd2-S*edivT*iNd1, 2)
-    return {"call": callPrice, "put": putPrice}
+    return {"call": callPrice, "put": putPrice, "sigma":sigma}
 
 
 def black_scholes_price_date_target_price(S, K, date, targetPrice, divrate=0):
@@ -140,19 +140,65 @@ def black_scholes_ticker_symbol(ticker, option_chain, targetPrice):
 
     return option_chain
 
-def black_scholes_option_pricer(ticker, target_price, call_or_put, strike=None, days=30):
-    if strike == None:
-        option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=target_price, call_or_put=call_or_put,
-                                                                      days=days, long=True)
+def black_scholes_ticker_symbol_vol(ticker, option_chain):
+    underlyingPrice = yf.Ticker(ticker).fast_info['lastPrice']
+    strike = option_chain.iloc[0]['Strike']
+    start_date = datetime.strptime(TODAY,'%Y-%m-%d')
+    expiry_date = datetime.strptime(option_chain.iloc[0]['date'], '%Y-%m-%d')
+    time = count_business_days(start_date, expiry_date) # count business days
+
+    vol_df = ticker_volatility_matrix_with_time_period_df(ticker, time_period=f"{int(time*1.33)}d") # get the volatility days out
+    sigma = vol_df.iloc[0]['volatility']
+    print(f"Generating Sigma from {int(time*1.33)} days out. Using Vol: {sigma}")
+    bsp = black_scholes_price(underlyingPrice,strike,time, sigma=sigma)
+    option_chain.loc[:,'BS_sigma_vol'] = sigma
+    option_chain.loc[:,'BS_Call_vol'] = bsp['call']
+    option_chain.loc[:,'BS_Put_vol'] = bsp['put']
+
+    iv =  option_chain.iloc[0]['Implied Volatility']
+    impliedVolBSP = black_scholes_price(underlyingPrice,strike,time, sigma=iv)
+    option_chain['_BS_IVPut'] = impliedVolBSP['put']
+    option_chain['_BS_IVCall'] = impliedVolBSP['call']
+
+    return option_chain
+
+def black_scholes_option_pricer(ticker, call_or_put, target_price=None, strike=None, days=30, long=True):
+    if strike == None and target_price != None:
+        option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker,
+                                                                          price=target_price,
+                                                                          call_or_put=call_or_put,
+                                                                          days=days, long=long)
+    elif strike == None and target_price == None:
+        last_price = yf.Ticker(ticker).fast_info['lastPrice']
+        vol_df = ticker_volatility_matrix_with_time_period_df(ticker,
+                                                              time_period=f"{days}d")  # get the volatility days out
+        sigma = vol_df.iloc[0]['volatility']
+        sigma = sigma / 2 # divide the sigma by 2 to be conservative
+
+        if (call_or_put == 'c' and long == True) or (call_or_put == 'p' and long == False):
+            # add to the target price
+            last_price += last_price*sigma
+        elif (call_or_put == 'c' and long == False) or (call_or_put=='p' and long == True):
+            # add to the target price
+            last_price -= last_price * sigma
+        target_price = last_price
+        option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker,
+                                                                          price=target_price,
+                                                                          call_or_put=call_or_put,
+                                                                          days=days, long=long)
+
+
     else:
         chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
         option_chain = chain[ chain['Strike'] == strike]
     ticker = option_chain.iloc[0]['Underlying']
-    bspricer = black_scholes_ticker_symbol(ticker, option_chain, target_price)
+    if target_price:
+        bspricer = black_scholes_ticker_symbol(ticker, option_chain, target_price)
+    else:
+        bspricer = black_scholes_ticker_symbol_vol(ticker, option_chain) # use volatility within date time period as vol
     return bspricer
 
 def black_scholes_pricer_entire_chain(option_chain):
-
     option_chain['BS_Call'] = option_chain.apply(
         lambda row: black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'], row['Strike'])['call'], axis=1)
     option_chain['BS_Put'] = option_chain.apply(
@@ -163,11 +209,34 @@ def black_scholes_pricer_entire_chain(option_chain):
                                                           row['Strike'], row['date'], row['Strike'])['sigma'], axis=1)
     return option_chain
 
+def black_scholes_pricer_entire_chain_vol(option_chain):
+    '''
+    use the previous volatility (number of days back * 1.33) to forecast future volatility for the entire options chain
+    '''
+    ticker = option_chain.iloc[0]['Underlying']
+    date = option_chain.iloc[0]['date']
+    start_date = datetime.strptime(TODAY, '%Y-%m-%d')
+    expiry_date = datetime.strptime(date, '%Y-%m-%d')
+    time = count_business_days(start_date, expiry_date)  # count business days
+
+    vol_df = ticker_volatility_matrix_with_time_period_df(ticker, time_period=f"{int(time * 1.33)}d")  # get the volatility days out
+    sigma = vol_df.iloc[0]['volatility']
+    print(f"Generating Sigma from {int(time * 1.33)} days out. Using Vol: {sigma}")
+    option_chain['BS_Call_vol'] = option_chain.apply(
+        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'], sigma=sigma)['call'], axis=1)
+    option_chain['BS_Put_vol'] = option_chain.apply(
+        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
+                                                          row['Strike'], row['date'], sigma=sigma)['put'], axis=1)
+    option_chain['BS_sigma_vol'] = option_chain.apply(
+        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
+                                                          row['Strike'], row['date'], sigma=sigma)['sigma'], axis=1)
+    return option_chain
+
 def visualize_impl_vs_real(option_chain):
     option_chain = black_scholes_pricer_entire_chain(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
 
-    plt.title(f'{ticker} Impl. Vol. vs. Real Vol.')
+    plt.title(f'{ticker} Impl. Vol. vs. Real Vol. - [Volatility To Reach Strike]')
 
     call_or_put = option_chain.iloc[0]['call_or_put']
     if call_or_put == 'CALL':
@@ -188,12 +257,63 @@ def visualize_impl_vs_real(option_chain):
     ax.set_facecolor("black")
     plt.show()
 
+def visualize_impl_vs_real_vol(option_chain):
+    option_chain = black_scholes_pricer_entire_chain_vol(option_chain)
+    ticker = option_chain.iloc[0]['Underlying']
+
+    plt.title(f'{ticker} Impl. Vol. vs. Real Vol. - [Volatility Within Time Period]')
+
+    call_or_put = option_chain.iloc[0]['call_or_put']
+    if call_or_put == 'CALL':
+        cols = ['BS_Call_vol', 'Last Price']
+    else:
+        cols = ['BS_Put_vol', 'Last Price']
+
+    label = ['Realized','Implied Volatility']
+    colors = ['red', 'blue']
+    line_style = ['-.', '-']
+    for idx, col in enumerate(cols):
+        plt.plot(option_chain['Strike'], option_chain[col], color=colors[idx], label=label[idx], linestyle=line_style[idx])
+    plt.xlabel("Strikes", fontweight='bold')
+    plt.ylabel("Price", fontweight='bold')
+    plt.legend(loc="upper right")
+
+    ax = plt.gca()
+    ax.set_facecolor("black")
+    plt.show()
+
+def visualize_impl_vs_real_combined(option_chain):
+    option_chain = black_scholes_pricer_entire_chain_vol(option_chain)
+    option_chain = black_scholes_pricer_entire_chain(option_chain)
+    ticker = option_chain.iloc[0]['Underlying']
+
+    plt.title(f'{ticker} Impl. Vol. vs. Real Vol. vs. Ideal Vol')
+
+    call_or_put = option_chain.iloc[0]['call_or_put']
+    if call_or_put == 'CALL':
+        cols = ['BS_Call', 'Last Price', 'BS_Call_vol']
+    else:
+        cols = ['BS_Put', 'Last Price', 'BS_Put_vol']
+
+    label = ['Idealized Vol','Implied Volatility', 'Real Vol']
+    colors = ['red', 'blue','yellow']
+    line_style = ['-.', '-', ':']
+    for idx, col in enumerate(cols):
+        plt.plot(option_chain['Strike'], option_chain[col], color=colors[idx], label=label[idx], linestyle=line_style[idx])
+    plt.xlabel("Strikes", fontweight='bold')
+    plt.ylabel("Price", fontweight='bold')
+    plt.legend(loc="upper right")
+
+    ax = plt.gca()
+    ax.set_facecolor("black")
+    plt.show()
+
 # def main():
 # #     # price an option
 #     ticker = 'T'
 #     target_price = 16.37
-#     print(black_scholes_option_pricer(ticker, target_price, call_or_put='c', days=30))
+#     # print(black_scholes_option_pricer(ticker, target_price, call_or_put='c', days=30))
 # #     # visualize black scholes
-# #     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
-# #     visualize_impl_vs_real(t_chain)
+#     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
+#     visualize_impl_vs_real_combined(t_chain)
 # main()
