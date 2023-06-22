@@ -183,13 +183,13 @@ def vol_outliers_email(date):
         msg,pos = vol_scraper_outliers_data(date)
         send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date}",
                              receiver_email=etrade_config.receiver_email)
-        add_generated_positions(df=pos)
-        get_generated_positions_obj()
+        # add_generated_positions(df=pos)
+        # get_generated_positions_obj()
     else:
         send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date}",
                              receiver_email=etrade_config.receiver_email)
-        add_generated_positions(df=pos)
-        get_generated_positions_obj()
+        # add_generated_positions(df=pos)
+        # get_generated_positions_obj()
 
 
 def start_session():
@@ -260,13 +260,72 @@ def black_scholes_input(blackScholesPricer):
         days_out = 30
     else:
         days_out = int(days_out)
-    print(black_scholes_option_pricer(ticker=ticker, call_or_put=call_or_put, target_price=target_price, strike=strike,
-                                      days=days_out, long=long))
+    print(f"inputs:\nticker:{ticker}\nstrike:{strike}\ncall_or_put:{call_or_put}\ntarget_price:{target_price}\ndays_out:{days_out}\nlong:{long}")
+    bsp_res = black_scholes_option_pricer(ticker=ticker, call_or_put=call_or_put, target_price=target_price, strike=strike,
+                                      days=days_out, long=long)
+    print(bsp_res)
+
     visualize = input("Visualize? (y or n): ")
 
+    use_call_or_put = 'BS_Call' if call_or_put == 'c' else 'BS_Put'
+    vol_fig = ticker_volatility_matrix_with_time_period_plt_vol(ticker,days_out)
+    perf_fig = ticker_volatility_matrix_with_time_period_plt_stock(ticker,days_out)
     if visualize == 'y':
-        opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days_out, long=long)
-        visualize_impl_vs_real_combined(opt_chain)
+        opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days_out)
+        fig = visualize_impl_vs_real_combined(opt_chain)
+
+        gmail.send(
+            subject=f"{ticker} Ideal vs. Implied vs. Real Volatility",
+            sender=f"{etrade_config.email}",
+            receivers=[f"{etrade_config.email}"],
+
+            # A plot in body
+            html=f"""
+                    <h1>Black Scholes Pricer Result for: {ticker}</h1> 
+                    {build_table(bsp_res[['Underlying','Strike','Last Price', use_call_or_put, 'Implied Volatility', 'BS_sigma']], color='grey_light')}
+                    Price of Option vs. Strike:
+                    {{{{ visualize_impl }}}}
+                    <br>
+                    Stock Performance:
+                    {{{{ visualize_perf }}}}
+                    <br>
+                    Stock Volatility:
+                    {{{{ visualize_vol }}}}
+                """,
+            body_images={
+                "visualize_impl": fig,
+                "visualize_vol": vol_fig,
+                "visualize_perf": perf_fig
+            },
+            # Or plot as an attachment
+            attachments={
+                f"Black_Scholes_{ticker}.png": fig
+            }
+        )
+    else:
+        gmail.send(
+            subject=f"{ticker} Ideal vs. Implied vs. Real Volatility",
+            sender=f"{etrade_config.email}",
+            receivers=[f"{etrade_config.email}"],
+
+            # A plot in body
+            html=f"""
+                                <h1>Black Scholes Pricer Result for: {ticker}</h1> 
+                                {build_table(bsp_res[['Underlying', 'Strike', 'Last Price', use_call_or_put, 'Implied Volatility', 'BS_sigma']], color='grey_light')}
+                                <br>
+                                Stock Performance:
+                                {{{{ visualize_perf }}}}
+                                <br>
+                                Stock Volatility:
+                                {{{{ visualize_vol }}}}
+                            """,
+            body_images={
+                "visualize_vol": vol_fig,
+                "visualize_perf": perf_fig
+            }
+        )
+    print("Sent to email.")
+
 
 
 if __name__ == "__main__":

@@ -12,6 +12,17 @@ import pandas as pd
 import yfinance as yf
 from pretty_html_table import build_table
 import time
+import matplotlib.pyplot as plt
+
+from redmail import gmail
+import sys
+
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + '/../')
+import etrade_config
+
+gmail.username = etrade_config.email
+gmail.password = etrade_config.password
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH =  script_path + '/../data'
@@ -217,3 +228,60 @@ def ticker_volatility_matrix_with_time_period_df(ticker, time_period="3mo"):
     df.loc[0] = [ticker, y.fast_info['lastPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
     # df.loc[0] = [ticker, y.info['currentPrice'], volatility, prev_day_volatility,diff_days, data['Volume'].mean()]
     return df
+
+def ticker_volatility_matrix_with_time_period_plt_vol(ticker, time_period="3mo"):
+    y = yf.Ticker(ticker)
+    try:
+        data = y.history(period=time_period)
+    except Exception:
+        data = y.history(period=f'{time_period}d')
+    time_period = data.shape[0]
+
+    data['Log returns'] = np.log(data['Close'] / data['Close'].shift())
+    data['Log returns'].std()
+
+    volatility = data['Log returns'].std() * np.sqrt(time_period)
+    str_vol = str(round(volatility, 4) * 100)
+
+    fig, ax = plt.subplots()
+    data['Log returns'].hist(ax=ax, bins=50, alpha=0.6, color='b')
+    ax.set_xlabel("Log return")
+    ax.set_ylabel("Freq of log return")
+    ax.set_title(f"{ticker} volatility: " + str_vol + "%")
+
+    return fig
+
+def ticker_volatility_matrix_with_time_period_plt_stock(ticker, time_period="3mo"):
+    y = yf.Ticker(ticker)
+    try:
+        data = y.history(period=time_period)
+    except Exception:
+        data = y.history(period=f'{time_period}d')
+    tp = time_period
+    data = data.reset_index()
+    print(data)
+
+    fig,ax = plt.subplots()
+    plt.plot(data['Date'], data['Close'])
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price")
+    ax.set_title(f"{ticker} Performance over {tp}")
+
+    return fig
+
+# perf_fig = ticker_volatility_matrix_with_time_period_plt_stock("T", time_period="3mo")
+# gmail.send(
+#             subject=f"test",
+#             sender=f"{etrade_config.email}",
+#             receivers=[f"{etrade_config.email}"],
+#
+#             # A plot in body
+#             html=f"""
+#
+#                     {{{{ visualize_perf }}}}
+#
+#                 """,
+#             body_images={
+#                 "visualize_perf": perf_fig
+#             }
+#         )

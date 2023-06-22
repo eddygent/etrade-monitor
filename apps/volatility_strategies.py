@@ -106,15 +106,18 @@ def generate_positions(df, to_html = False):
     positions = positions.reset_index()
     if to_html:
         html_positions = positions.copy()[
-            ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Impl. Volatility']
+            ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Implied Volatility']
         ]
         html_positions = html_positions.reset_index(drop=True)
         return build_table(html_positions, 'blue_light'), positions
     return positions
 
 def vol_scraper_outliers_data(date=TODAY, to_html = True):
-
-    convert_date = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
+    try:
+        convert_date = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
+    except ValueError as e:
+        logging.info(f"{e} Error. Trying to use different date format")
+        convert_date = date
     filename = f'voldata/volatility_scanner_result_{convert_date}_3mo.csv'
     filepath = os.path.join(DATA_PATH, filename)
     logging.info(f"Searching for: {filepath}... {os.path.exists(filepath)}")
@@ -184,11 +187,11 @@ def determine_position(ticker, perc_move, spec_price, volume):
             call_or_put = 'c'
             long = False
             position = 'Short Call'
-    try:
-        chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=spec_price, call_or_put=call_or_put, days=30, long=long)
-    except Exception as e:
-        logging.info(f'HIT EXCEPTION WHILE GETTING FRIDAY OPTIONS FOR DATE CLOSEST TO PRICE!!!\n{e}')
-        chain = pd.DataFrame()
+    # try:
+    chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker, price=spec_price, call_or_put=call_or_put, days=30, long=long)
+    # except Exception as e:
+    #     logging.info(f'HIT EXCEPTION WHILE GETTING FRIDAY OPTIONS FOR DATE CLOSEST TO PRICE!!!\n{e}')
+    #     chain = pd.DataFrame()
     if chain.empty:
         logging.info(f'Unable to get Options Chain for {ticker}.')
         return chain
@@ -310,3 +313,4 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
 #     # print(sssu)
 #     print(vol_scraper_email_str('2023-05-29'))
 # main()
+vol_scraper_outliers_data()

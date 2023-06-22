@@ -11,8 +11,12 @@ sys.path.insert(0, script_path + '/../')
 import etrade_config
 RATE = etrade_config.RATE  # Annualized risk free rate
 from yop import get_friday_option_for_ticker_date_closest_to_price, get_friday_options_chain_for_ticker_date
+
 import matplotlib.pyplot as plt
 
+from redmail import gmail
+gmail.username = etrade_config.email
+gmail.password = etrade_config.password
 
 def american_black_scholes_price(S, K, r, T, sigma):
     """
@@ -287,6 +291,7 @@ def visualize_impl_vs_real_combined(option_chain):
     option_chain = black_scholes_pricer_entire_chain(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
 
+    fig = plt.figure()
     plt.title(f'{ticker} Impl. Vol. vs. Real Vol. vs. Ideal Vol')
 
     call_or_put = option_chain.iloc[0]['call_or_put']
@@ -306,7 +311,8 @@ def visualize_impl_vs_real_combined(option_chain):
 
     ax = plt.gca()
     ax.set_facecolor("black")
-    plt.show()
+
+    return fig
 
 # def main():
 # #     # price an option

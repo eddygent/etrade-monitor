@@ -66,8 +66,12 @@ def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
     get the chain for either calls or puts using yfinance.Ticker.option_chain lib and return for usage
     '''
     ticker = yf.Ticker(stock_ticker)
-
+    # try:
     opt = ticker.option_chain(expiration_date)
+    # except ValueError:
+    #     add_7 = datetime.strptime(expiration_date,"%Y-%m-%d")+timedelta(days=7)
+    #     print("Moving forward expiraiton date 7 days - not present.")
+    #     get_chain_ticker_date(stock_ticker, option_type, add_7.strftime("%Y-%m-%d"))
     if option_type == 'c':
         opt = opt.calls
     else:
@@ -91,7 +95,7 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
                 return pd.DataFrame()
             chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7, tries=tries+1)
         print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
-    except AttributeError:
+    except ValueError:
         print(f"Error getting the chain for: {ticker}")
         print(f"Returning Empty Dataframe.")
         return pd.DataFrame()
@@ -103,7 +107,7 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
     chain['date'] = friday_after_days_out(days, True)
     if call_or_put == 'c': chain['call_or_put'] = 'CALL'
     elif call_or_put == 'p':
-        chain['call_or_put'] == 'PUT'
+        chain['call_or_put'] = 'PUT'
     chain['Underlying'] = ticker
     return chain
 
@@ -124,7 +128,7 @@ def get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=330
             if abs(price-K) < diff:
                 diff = abs(price-K)
                 strike = K
-    except Exception as e:
+    except KeyError as e:
         print(f"Error, {e}, Unable to get Options Chain for: {ticker}")
         return pd.DataFrame()
     abs_diff = abs(price-strike)
