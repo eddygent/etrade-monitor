@@ -176,12 +176,13 @@ def process_input(inp, session, base_url, accounts):
 def vol_outliers_email(date):
     logging.info(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
     try:
+        logging.info('attempting to get data')
         msg,pos = vol_scraper_outliers_data(date)
     except Exception as e:
         logging.debug(f"Whoops, hit {e}. Trying to re run in 90 seconds.")
         time.sleep(90)
         msg,pos = vol_scraper_outliers_data(date)
-        send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date}",
+        send_email_with_data(msg, subject=f"EMon: Volatility Outliers & Positions Job {date} - Check Logs Encountered Exception",
                              receiver_email=etrade_config.receiver_email)
         # add_generated_positions(df=pos)
         # get_generated_positions_obj()

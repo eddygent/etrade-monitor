@@ -161,8 +161,9 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
         return build_table(df, 'green_dark'),count,seconds
     return df,count,seconds
 
-def tick_vol_runner(time_period='3mo'):
-
+def tick_vol_runner(time_period='3mo', date=TODAY, test=True):
+    if "-" not in date:
+        date = datetime.strptime(date, '%Y%m%d').strftime("%Y-%m-%d")
     symbols = []
 
     f = open(f"{DATA_PATH}/us_symbols.csv", "r")
@@ -172,7 +173,7 @@ def tick_vol_runner(time_period='3mo'):
         symbols.append(symbol)
     f.close()
 
-    filename = f'voldata/volatility_scanner_result_{TODAY}_{time_period}.csv'
+    filename = f'voldata/volatility_scanner_result_{date}_{time_period}.csv'
     filepath = os.path.join(DATA_PATH,filename)
 
     if not os.path.exists(filepath):
@@ -180,9 +181,13 @@ def tick_vol_runner(time_period='3mo'):
         f = open(filepath, 'w')
         print(f'{",".join(HEADER)}', file=f)
         f.close() # only want to write the first line
+    else:
+        print(f"Found file for {date}")
     count = 0
 
     df = pd.read_csv(filepath)
+    if test:
+        return df
 
     for i, tick in enumerate(symbols):
         count += 1

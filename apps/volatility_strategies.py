@@ -7,6 +7,8 @@
 import os
 import sys
 
+import pandas as pd
+
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path)
 from volatility import *
@@ -24,8 +26,9 @@ level = logging.DEBUG
 fmt =  "[%(levelname)s] [apps/volatility_strategies.py] %(asctime)-15s %(message)s"
 logging.basicConfig(level=level, format=fmt)
 
-def get_latest_vol_df(time_period='3mo'):
-    return tick_vol_runner(time_period)
+from black_scholes_model import black_scholes_ticker_symbol_vol
+def get_latest_vol_df(time_period='3mo', date=TODAY):
+    return tick_vol_runner(time_period,date=date)
 
 def speculate_percent_move(percent_move, volatility, prev_day_volatility):
     weight = abs(volatility-prev_day_volatility)
@@ -41,12 +44,12 @@ def speculate_price(spec_perc_move, last_price):
     if spec_perc_move == -.9999: spec_perc_move = -.2 # conservative with -.2
     return (1 + spec_perc_move) * last_price
 
-def filter_vol_all_symbols_find_outliers(volatility_time_period='3mo',  volume = 0, to_html=False, dataframe=pd.DataFrame()):
+def filter_vol_all_symbols_find_outliers(volatility_time_period='3mo',  volume = 0,date=TODAY, to_html=False, dataframe=pd.DataFrame()):
     '''
         Look for Symbols with yesterday's move greater than or equal to perc_move avg volatility within time period.
     '''
     ret_str = f"Symbols with yesterday's move greater than or equal to the average volatility within {volatility_time_period} time period, and avg volume over given period of time greater than {'{:.2f} M'.format(float(volume)/1000000)}."
-    dataframe = get_latest_vol_df(volatility_time_period)
+    dataframe = get_latest_vol_df(volatility_time_period, date=date)
     df = dataframe.copy()
     df = df[(abs(df['percentMove']) >= df['prevDayVolatility']) & (df['avgVolume'] > volume) ]
     df['speculativePercMove'] = df.apply(lambda row : speculate_percent_move(row['percentMove'], row['volatility'], row['prevDayVolatility']), axis = 1)
@@ -60,18 +63,21 @@ def filter_vol_all_symbols_find_outliers(volatility_time_period='3mo',  volume =
         ret_df = df.copy()
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['ticker']
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume'] / 1000000)), axis=1)
+        df = df.rename(
+            columns={'speculativePercMove': 'spec%Move', 'prevDayVolatility': 'prevDayVol', 'volatility': 'vol',
+                     'percentMove': '%Move'})
         return build_table(df.reset_index(drop=True), 'orange_light'), ret_df, ret_str, dataframe
     else:
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume'] / 1000000)), axis=1)
     return df.reset_index(drop=True), ret_str, dataframe
 
-def filter_vol_all_symbols_find_vol(volatility_time_period='3mo', perc_move=.15, volume = 0, avg_vol=0.5, to_html=False, dataframe=pd.DataFrame()):
+def filter_vol_all_symbols_find_vol(volatility_time_period='3mo', perc_move=.15, volume = 0, avg_vol=0.5, date=TODAY, to_html=False, dataframe=pd.DataFrame()):
     '''
         Look for Symbols with yesterday's move greater than perc_move, avg volume over given period of time
         greater than volume and avg volatility less than avg_vol.
     '''
     ret_str = f"Symbols with yesterday's move greater than percentage move {perc_move}, avg volume over given period of time greater than {'{:.2f} M'.format(float(volume)/1000000)}, and avg volatility less than {avg_vol}; an outlier with relatively low volatility."
-    dataframe = get_latest_vol_df(volatility_time_period)
+    dataframe = get_latest_vol_df(volatility_time_period, date=date)
     df = dataframe.copy()
     df = df[(abs(df['percentMove'])  >= perc_move) & (df['prevDayVolatility']<avg_vol) & (df['avgVolume'] > volume)]
     df['speculativePercMove'] = df.apply(lambda row : speculate_percent_move(row['percentMove'], row['volatility'], row['prevDayVolatility']), axis = 1)
@@ -86,28 +92,66 @@ def filter_vol_all_symbols_find_vol(volatility_time_period='3mo', perc_move=.15,
         ret_df = df.copy()
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['ticker']
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume']/1000000)), axis = 1)
+        df = df.rename(
+            columns={'speculativePercMove': 'spec%Move', 'prevDayVolatility': 'prevDayVol', 'volatility': 'vol',
+                     'percentMove':'%Move'})
         return build_table(df.reset_index(drop=True), 'orange_light'), ret_df, ret_str, dataframe
     else:
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume']/1000000)), axis = 1)
     return df.reset_index(drop=True), ret_str, dataframe
 
-def generate_positions(df, to_html = False):
+def generate_options_positions(df, to_html = False):
     df['specPrice'] = df.apply(lambda row: speculate_price(row['speculativePercMove'], row['lastPrice']), axis=1)
     positions = pd.DataFrame()
     for index, row in df.iterrows():
-        determined_position = determine_position(row['ticker'], row['percentMove'], row['specPrice'], row['avgVolume'])
-        determined_position['speculativePercMove'] = row['speculativePercMove']
-        determined_position['prevDayVolatility'] = row['prevDayVolatility']
-        determined_position['volatility'] = row['volatility']
-        determined_position['lastPrice'] = row['lastPrice']
-
-        positions = pd.concat([positions, determined_position])
+        try:
+            determined_position = determine_option_position(row['ticker'], row['percentMove'], row['specPrice'], row['avgVolume'])
+            determined_position['speculativePercMove'] = row['speculativePercMove']
+            determined_position['prevDayVolatility'] = row['prevDayVolatility']
+            determined_position['volatility'] = row['volatility']
+            determined_position['lastPrice'] = row['lastPrice']
+            determined_position = black_scholes_ticker_symbol_vol(row['ticker'],determined_position)
+            positions = pd.concat([positions, determined_position])
+        except Exception as e:
+            print(f'[generate_positions] Failed to get a dataframe for an option Contract. continuing')
+            continue
     positions.to_csv(os.path.join(DATA_PATH, f'generated_positions_{TODAY}.csv'))
     positions = positions.reset_index()
     if to_html:
-        html_positions = positions.copy()[
-            ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Implied Volatility']
-        ]
+        try:
+            html_positions = positions.copy()[
+                ['Symbol', 'Position', 'Strike', 'Last Price', 'Volume', 'Open Interest', 'Implied Volatility','BS_sigma_vol','BS_Call_vol','BS_Put_vol']
+            ]
+            html_positions = html_positions.rename(columns={'Implied Volatility': 'IV', 'Last Price':'S', 'Strike':'K','BS_sigma_vol':'BSσ','BS_Call_vol':'BSC','BS_Put_vol':'BSP'})
+        except Exception as e:
+            return f"[generate_positions] Error Generating Positions.<br>Snippet of error: <br>{e}<br><br>",pd.DataFrame()
+        html_positions = html_positions.reset_index(drop=True)
+        return build_table(html_positions, 'blue_light'), positions
+    return positions
+
+def generate_stock_positions(df, to_html = False):
+    df['specPrice'] = df.apply(lambda row: speculate_price(row['speculativePercMove'], row['lastPrice']), axis=1)
+    positions = pd.DataFrame()
+    for index, row in df.iterrows():
+        try:
+            determined_position = determine_stock_position(row['ticker'], row['percentMove'], row['specPrice'], row['avgVolume'])
+            determined_position['speculativePercMove'] = row['speculativePercMove']
+            determined_position['prevDayVolatility'] = row['prevDayVolatility']
+            determined_position['volatility'] = row['volatility']
+            determined_position['lastPrice'] = row['lastPrice']
+            positions = pd.concat([positions, determined_position])
+        except Exception as e:
+            print(f'[generate_positions] Failed to get a dataframe for an option Contract. continuing')
+            continue
+    positions.to_csv(os.path.join(DATA_PATH, f'generated_positions_{TODAY}.csv'))
+    positions = positions.reset_index()
+    if to_html:
+        try:
+            html_positions = positions.copy()[
+                ['Ticker', 'Position', 'lastPrice','volatility','percMove', 'spec_price']
+            ]
+        except Exception as e:
+            return f"[generate_positions] Error Generating Stock Positions.<br>Snippet of error: <br>{e}<br><br>",pd.DataFrame()
         html_positions = html_positions.reset_index(drop=True)
         return build_table(html_positions, 'blue_light'), positions
     return positions
@@ -116,8 +160,9 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
     try:
         convert_date = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
     except ValueError as e:
-        logging.info(f"{e} Error. Trying to use different date format")
+        logging.info(f"[vol_scraper_outliers_data] {e}\nError. Trying to use different date format")
         convert_date = date
+        logging.info(f'Converting date to: {convert_date}')
     filename = f'voldata/volatility_scanner_result_{convert_date}_3mo.csv'
     filepath = os.path.join(DATA_PATH, filename)
     logging.info(f"Searching for: {filepath}... {os.path.exists(filepath)}")
@@ -125,9 +170,9 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
         logging.info("Path Exists... Opening file")
         df = pd.read_csv(filepath)
         df = df[~df['ticker'].isin(EXCLUDE)]
-        find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df)
+        find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True, dataframe=df, date=date)
         logging.info(f'Result of filter_vol_all_symbols_find_vol:\n{df}')
-        find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df)
+        find_out, vol_out, str_out, df = filter_vol_all_symbols_find_outliers(volume=1000000, to_html=True, dataframe=df,date=date)
         logging.info(f'Result of filter_vol_all_symbols_find_outliers:\n{df}')
     else:
         find_vol, vol_res, str_vol, df = filter_vol_all_symbols_find_vol(volume=1000000, to_html=True)
@@ -147,26 +192,32 @@ def vol_scraper_outliers_data(date=TODAY, to_html = True):
                 {find_out}<br>
                 <em>Note: If the percent move is greater than 198% the speculative percentage move is defaulted to -0.99 and further investigation is suggested.</em>
             """
-    send_email_with_data(volatility_outliers_email, subject=f"EMon: Volatility Outliers Job {date}",
-                         receiver_email=etrade_config.receiver_email)
     try:
-        positions_html, positions = generate_positions(df, to_html = True)
+        options_positions_html, positions = generate_options_positions(df, to_html = True)
     except Exception as e:
-        logging.info(f'WE HIT AN EXCEPTION WHILE GENERATING POSITIONS: \n{e}')
-        positions_html,positions = "Exception hit while generating positions.", pd.DataFrame()
-    volatility_outliers_email_with_positions = volatility_outliers_email + \
+        logging.info(f'WE HIT AN EXCEPTION WHILE GENERATING OPTIONS POSITIONS: \n{e}')
+        options_positions_html,positions = "Exception hit while generating positions.", pd.DataFrame()
+    volatility_outliers_email_with_options_positions = volatility_outliers_email + \
         f""" 
         <h2>Options Positions</h2>
-        {positions_html}
+        {options_positions_html}
         <em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>
         """
+    stock_positions_html, stock_positions = generate_stock_positions(df, to_html=True)
+    volatility_outliers_email_with_stock_positions = volatility_outliers_email_with_options_positions + \
+        f"""
+        <h2>Stock Positions</h2>
+        {stock_positions_html}
+        <em>Note: These positions are not screened and were generated programatically using a Volatility Based Mean Reversion Quantitative Method</em>
+        """
+
+    vol_out_email = volatility_outliers_email_with_stock_positions
     if to_html:
-        print(volatility_outliers_email_with_positions, positions)
-        return volatility_outliers_email_with_positions, positions
+        return vol_out_email, positions
     else:
         return positions
 
-def determine_position(ticker, perc_move, spec_price, volume):
+def determine_option_position(ticker, perc_move, spec_price, volume):
     perc_move = perc_move *-1
     if perc_move > 0:
         if volume < 20000000: # if volume less than 20M
@@ -201,6 +252,22 @@ def determine_position(ticker, perc_move, spec_price, volume):
     chain['percMove'] = perc_move
     return chain
 
+def determine_stock_position(ticker, perc_move, spec_price, volume):
+    stock_pos = {}
+    perc_move = perc_move
+    if perc_move > 0:
+        position = 'Short'
+    else:
+        position = 'Long'
+    print("Adding",position,ticker,"Stock Strat as Perc Move is:", perc_move)
+    stock_pos['Ticker'] = ticker
+    stock_pos['Position'] = position
+    stock_pos['percMove'] = perc_move
+    stock_pos['spec_price'] = spec_price
+    stock_pos['volume'] = volume
+    stock_pos = pd.DataFrame(stock_pos, index=[0])
+    print(stock_pos)
+    return stock_pos
 
 def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
     '''
@@ -313,4 +380,3 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
 #     # print(sssu)
 #     print(vol_scraper_email_str('2023-05-29'))
 # main()
-vol_scraper_outliers_data()

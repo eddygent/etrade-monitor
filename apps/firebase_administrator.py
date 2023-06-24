@@ -177,6 +177,7 @@ def generate_random_key():
 def add_generated_positions(date=TODAY, df=pd.DataFrame()):
     gen_pos_ref = db.collection(u'GeneratedPositions')
     if df.empty:
+        print('firebase generated')
         df = vol_scraper_outliers_data(date, to_html=False)
 
     positions_dict = df.to_dict(orient='index')
