@@ -51,7 +51,7 @@ def _get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' 
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
             if tries == 14:
                 print(f"Error getting the chain for: {ticker}")
-                print(f"Returning Empty Dataframe.")
+                print(f"Tried: {tries} times. Returning Empty Dataframe.")
                 return pd.DataFrame()
             chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7, tries=tries+1)
         print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
@@ -66,9 +66,11 @@ def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
     get the chain for either calls or puts using yfinance.Ticker.option_chain lib and return for usage
     '''
     ticker = yf.Ticker(stock_ticker)
-    # try:
-    opt = ticker.option_chain(expiration_date)
-    # except ValueError:
+    try:
+        opt = ticker.option_chain(expiration_date)
+    except ValueError as e:
+        print(f'Got ValueError: {e} when getting options chain. Returning empty to move forward.')
+        return pd.DataFrame()
     #     add_7 = datetime.strptime(expiration_date,"%Y-%m-%d")+timedelta(days=7)
     #     print("Moving forward expiraiton date 7 days - not present.")
     #     get_chain_ticker_date(stock_ticker, option_type, add_7.strftime("%Y-%m-%d"))
@@ -86,6 +88,7 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
     '''
     start = time.time()
     try:
+        print(f'Trying to get the options chain for: {ticker}.')
         chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
         if chain.empty:
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")

@@ -161,7 +161,7 @@ def volatility_scanner(symbols=[], volatility=".3", time_period="3mo", price=Non
         return build_table(df, 'green_dark'),count,seconds
     return df,count,seconds
 
-def tick_vol_runner(time_period='3mo', date=TODAY, test=True):
+def tick_vol_runner(time_period='3mo', date=TODAY, test=False):
     if "-" not in date:
         date = datetime.strptime(date, '%Y%m%d').strftime("%Y-%m-%d")
     symbols = []
