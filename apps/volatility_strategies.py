@@ -63,6 +63,10 @@ def filter_vol_all_symbols_find_outliers(volatility_time_period='3mo',  volume =
         ret_df = df.copy()
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['ticker']
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume'] / 1000000)), axis=1)
+
+        df['speculativePercMove'] = df.apply(lambda row: "{:}".format(int(row['speculativePercMove'] * 100)), axis=1)
+        df['percentMove'] = df.apply(lambda row: "{:}".format(int(row['percentMove'] * 100)), axis=1)
+
         df = df.rename(
             columns={'speculativePercMove': 'spec%Move', 'prevDayVolatility': 'prevDayVol', 'volatility': 'vol',
                      'percentMove': '%Move'})
@@ -92,6 +96,10 @@ def filter_vol_all_symbols_find_vol(volatility_time_period='3mo', perc_move=.15,
         ret_df = df.copy()
         df['yFinance Link'] = 'https://finance.yahoo.com/quote/' + df['ticker']
         df['avgVolume'] = df.apply(lambda row: "{:.2f} M".format(float(row['avgVolume']/1000000)), axis = 1)
+
+        df['speculativePercMove'] = df.apply(lambda row: "{:}".format(int(row['speculativePercMove'] * 100)), axis=1)
+        df['percentMove'] = df.apply(lambda row: "{:}".format(int(row['percentMove'] * 100)), axis=1)
+
         df = df.rename(
             columns={'speculativePercMove': 'spec%Move', 'prevDayVolatility': 'prevDayVol', 'volatility': 'vol',
                      'percentMove':'%Move'})
@@ -148,10 +156,11 @@ def generate_stock_positions(df, to_html = False):
     if to_html:
         try:
             html_positions = positions.copy()[
-                ['Ticker', 'Position', 'lastPrice','volatility','percMove', 'spec_price']
+                ['Ticker', 'Position', 'lastPrice','volatility','prevDayVolatility','percMove', 'spec_price']
             ]
         except Exception as e:
             return f"[generate_positions] Error Generating Stock Positions.<br>Snippet of error: <br>{e}<br><br>",pd.DataFrame()
+        html_positions = html_positions.rename(columns={'prevDayVolatility':'prevVol'})
         html_positions = html_positions.reset_index(drop=True)
         return build_table(html_positions, 'blue_light'), positions
     return positions
