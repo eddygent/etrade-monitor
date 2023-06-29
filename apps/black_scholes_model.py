@@ -203,14 +203,14 @@ def black_scholes_option_pricer(ticker, call_or_put, target_price=None, strike=N
     return bspricer
 
 def black_scholes_pricer_entire_chain(option_chain):
-    option_chain['BS_Call'] = option_chain.apply(
-        lambda row: black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'], row['Strike'])['call'], axis=1)
-    option_chain['BS_Put'] = option_chain.apply(
-        lambda row: black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
-                                                          row['Strike'], row['date'], row['Strike'])['put'], axis=1)
-    option_chain['BS_sigma'] = option_chain.apply(
-        lambda row: black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
-                                                          row['Strike'], row['date'], row['Strike'])['sigma'], axis=1)
+    option_chain['BS_Call'] = 0
+    option_chain['BS_Put'] = 0
+    option_chain['BS_sigma'] = 0
+    for index, row in option_chain.iterrows():
+        black_scholes_dict = black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'],row['Strike'])
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Call')] = black_scholes_dict['call']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Put')] = black_scholes_dict['put']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma')] = black_scholes_dict['sigma']
     return option_chain
 
 def black_scholes_pricer_entire_chain_vol(option_chain):
@@ -226,14 +226,15 @@ def black_scholes_pricer_entire_chain_vol(option_chain):
     vol_df = ticker_volatility_matrix_with_time_period_df(ticker, time_period=f"{int(time * 1.33)}d")  # get the volatility days out
     sigma = vol_df.iloc[0]['volatility']
     print(f"Generating Sigma from {int(time * 1.33)} days out. Using Vol: {sigma}")
-    option_chain['BS_Call_vol'] = option_chain.apply(
-        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'], sigma=sigma)['call'], axis=1)
-    option_chain['BS_Put_vol'] = option_chain.apply(
-        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
-                                                          row['Strike'], row['date'], sigma=sigma)['put'], axis=1)
-    option_chain['BS_sigma_vol'] = option_chain.apply(
-        lambda row: black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'],
-                                                          row['Strike'], row['date'], sigma=sigma)['sigma'], axis=1)
+
+    option_chain['BS_Call_vol'] = 0
+    option_chain['BS_Put_vol'] = 0
+    option_chain['BS_sigma_vol'] = 0
+    for index, row in option_chain.iterrows():
+        black_scholes_dict = black_scholes_price_date(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'], sigma=sigma)
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Call_vol')] = black_scholes_dict['call']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Put_vol')] = black_scholes_dict['put']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma_vol')] = black_scholes_dict['sigma']
     return option_chain
 
 def visualize_impl_vs_real(option_chain):
@@ -317,9 +318,10 @@ def visualize_impl_vs_real_combined(option_chain):
 # def main():
 # #     # price an option
 #     ticker = 'T'
-#     target_price = 16.37
+#     # target_price = 16.37
 #     # print(black_scholes_option_pricer(ticker, target_price, call_or_put='c', days=30))
 # #     # visualize black scholes
 #     t_chain = get_friday_options_chain_for_ticker_date(ticker='T', call_or_put='c', days=30, tries=0)
-#     visualize_impl_vs_real_combined(t_chain)
+#     print(black_scholes_pricer_entire_chain(t_chain))
+#     # visualize_impl_vs_real_combined(t_chain)
 # main()

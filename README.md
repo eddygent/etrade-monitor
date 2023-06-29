@@ -11,9 +11,11 @@
 
 ## ToDo
 - Documenting Forecasted Trades in a Journal (Medium, 3 Difficulty)
-- Fair Pricer for Stocks and Options (High, x Difficulty Unknown)
+- Fair Pricer for Stocks  (High, Unknown Difficulty)
 - Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
 - Volatility of Stock Since its purchase (Medium, 3 Difficulty)
+- Service for Emon (non-account related services) (Medium, 21 Difficulty)
+- Webapp for Emon (non-account related services) (Medium, 21 Difficulty)
 
 ## Requirements
 

@@ -9,12 +9,16 @@ Haphazardly put together "applications" that I use for different reasons. I have
 ## Done
 - [Sentiment Analysis using NLP](#sentiment-analysis)
 - [Options Volatility Screener/Volatility Screener to find Outliers](#options-volatility-screener)
-- Generation of Neutral Strategies using Short Strangles
+- [Generation of Neutral Strategies using Short Strangles](./volatility_strategies.py)
+- [Black Scholes Pricer for Options](./black_scholes_model.py) 
 
 ## ToDo
-- Fair Pricer for Stocks and Options (High, x Difficulty Unknown)
+- Fair Pricer for Stocks (High, Unknown Difficulty)
 - Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
 - Volatility of Stock Since its purchase (Medium, 3 Difficulty)
+- Mispriced Option (overpriced, underpriced, how to correct) (Medium, 1 Difficulty)
+- Delta Calculation (High, 3 Difficulty)
+- Hedge Ratio (Medium, 1 Difficulty) **_Contingent on Delta Calculation_**
 
 ## In Progress
 - Documenting Forecasted Trades in a Journal [firebase] (Medium, 3 Difficulty)
