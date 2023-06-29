@@ -2,6 +2,8 @@ import math
 from datetime import datetime, timedelta
 import os
 import sys
+
+import pandas as pd
 import yfinance as yf
 from volatility import TODAY, ticker_volatility_matrix_with_time_period_df
 
@@ -43,7 +45,7 @@ from math import sqrt, exp, log, erf
 from decimal import *
 getcontext().prec = 5
 
-def black_scholes_price(S, K, time, sigma, divrate=0):
+def black_scholes_price(S:float, K:float, time:int, sigma:float, divrate:int=0) -> dict:
     #statistics
     sigTsquared = sqrt(Decimal(time)/365)*sigma
     edivT = exp((-divrate*time)/365)
@@ -60,7 +62,7 @@ def black_scholes_price(S, K, time, sigma, divrate=0):
     putPrice = round(K*ert*iNd2-S*edivT*iNd1, 2)
     return {"call": callPrice, "put": putPrice}
 
-def black_scholes_price_date(S, K, date, sigma, divrate=0):
+def black_scholes_price_date(S:float , K:float, date:str, sigma:float, divrate:int=0) -> dict:
     #statistics
     start_date = datetime.strptime(TODAY, '%Y-%m-%d')
     expiry_date = datetime.strptime(date, '%Y-%m-%d')
@@ -82,7 +84,10 @@ def black_scholes_price_date(S, K, date, sigma, divrate=0):
     return {"call": callPrice, "put": putPrice, "sigma":sigma}
 
 
-def black_scholes_price_date_target_price(S, K, date, targetPrice, divrate=0):
+def black_scholes_price_date_target_price(S:float, K:float, date:str, targetPrice:float, divrate:float=0) -> dict:
+    '''
+    Get the black scholes calculation given a S=Spot Price, K=Strike Price, date=in str format "%Y-%m-%d" and dividend rate.
+    '''
     # statistics
     start_date = datetime.strptime(TODAY, '%Y-%m-%d')
     expiry_date = datetime.strptime(date, '%Y-%m-%d')
@@ -105,7 +110,7 @@ def black_scholes_price_date_target_price(S, K, date, targetPrice, divrate=0):
     putPrice = round(K * ert * iNd2 - S * edivT * iNd1, 2)
     return {"call": callPrice, "put": putPrice,'sigma':sigma}
 
-def count_business_days(start_date, end_date):
+def count_business_days(start_date:str, end_date:str):
   """Counts the number of business days between two dates.
 
   Args:
@@ -124,7 +129,10 @@ def count_business_days(start_date, end_date):
 
   return business_days
 
-def black_scholes_ticker_symbol(ticker, option_chain, targetPrice):
+def black_scholes_ticker_symbol(ticker:str, option_chain:pd.DataFrame, targetPrice:float) -> pd.DataFrame:
+    '''
+    Get the black scholes calculation given a ticker, options chain, and target price.
+    '''
     underlyingPrice = yf.Ticker(ticker).fast_info['lastPrice']
     sigma = abs(((targetPrice/underlyingPrice)-1)*2)  # the volatility we expect/needed to expire itm using target price
     strike = option_chain.iloc[0]['Strike']
@@ -144,7 +152,7 @@ def black_scholes_ticker_symbol(ticker, option_chain, targetPrice):
 
     return option_chain
 
-def black_scholes_ticker_symbol_vol(ticker, option_chain):
+def black_scholes_ticker_symbol_vol(ticker:str, option_chain:pd.DataFrame) -> pd.DataFrame:
     underlyingPrice = yf.Ticker(ticker).fast_info['lastPrice']
     strike = option_chain.iloc[0]['Strike']
     start_date = datetime.strptime(TODAY,'%Y-%m-%d')
@@ -166,7 +174,18 @@ def black_scholes_ticker_symbol_vol(ticker, option_chain):
 
     return option_chain
 
-def black_scholes_option_pricer(ticker, call_or_put, target_price=None, strike=None, days=30, long=True):
+def black_scholes_option_pricer(ticker:str, call_or_put:str, target_price:float=None, strike:float=None, days:int=30, long:bool=True) ->pd.DataFrame:
+    '''
+    Black Scholes Options Pricer that takes the target price as input to determine volatility, and days until expiration.
+    Works for both long and short options.
+
+    If the strike is specified not specified and the target price is,
+    the strike will be that of closest to the target price.
+
+    If the strike is not specified and the target price is not specified, the target price will use its volatility
+    within past days(days) to generate a target price, then as a volatility measure and use as input to black scholes model.
+    The strike will be that of whatever is closest to the target price.
+    '''
     if strike == None and target_price != None:
         option_chain = get_friday_option_for_ticker_date_closest_to_price(ticker=ticker,
                                                                           price=target_price,
@@ -190,7 +209,9 @@ def black_scholes_option_pricer(ticker, call_or_put, target_price=None, strike=N
                                                                           price=target_price,
                                                                           call_or_put=call_or_put,
                                                                           days=days, long=long)
-
+    elif strike != None and target_price == None:
+        # TODO: Need to use the strike and get the target price options chain.
+        pass
 
     else:
         chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days)
@@ -202,7 +223,28 @@ def black_scholes_option_pricer(ticker, call_or_put, target_price=None, strike=N
         bspricer = black_scholes_ticker_symbol_vol(ticker, option_chain) # use volatility within date time period as vol
     return bspricer
 
-def black_scholes_pricer_entire_chain(option_chain):
+def black_scholes_pricer_entire_chain_target(option_chain:pd.DataFrame, target_price:float) -> pd.DataFrame:
+    '''
+    use volatility to reach target price as future volatility as input for black scholes model
+    for the entire options chain
+        Target Volatility: The minimum volatility required in order to reach the target price of an option.
+    '''
+    option_chain['BS_Call'] = 0
+    option_chain['BS_Put'] = 0
+    option_chain['BS_sigma'] = 0
+    for index, row in option_chain.iterrows():
+        black_scholes_dict = black_scholes_price_date_target_price(yf.Ticker(row['Underlying']).fast_info['lastPrice'], row['Strike'], row['date'],targetPrice=target_price)
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Call_target')] = black_scholes_dict['call']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_Put_target')] = black_scholes_dict['put']
+        option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma_target')] = black_scholes_dict['sigma']
+    return option_chain
+
+def black_scholes_pricer_entire_chain(option_chain:pd.DataFrame) -> pd.DataFrame:
+    '''
+    use ideal volatility as future volatility as input for black scholes model
+    for the entire options chain
+        Ideal Vol: The minimum volatility required in order to reach a particular options Strike.
+    '''
     option_chain['BS_Call'] = 0
     option_chain['BS_Put'] = 0
     option_chain['BS_sigma'] = 0
@@ -213,9 +255,10 @@ def black_scholes_pricer_entire_chain(option_chain):
         option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma')] = black_scholes_dict['sigma']
     return option_chain
 
-def black_scholes_pricer_entire_chain_vol(option_chain):
+def black_scholes_pricer_entire_chain_vol(option_chain:pd.DataFrame)-> pd.DataFrame:
     '''
-    use the previous volatility (number of days back * 1.33) to forecast future volatility for the entire options chain
+    use the previous volatility (number of days back * 1.33) as future volatility as input for black scholes model
+    for the entire options chain
     '''
     ticker = option_chain.iloc[0]['Underlying']
     date = option_chain.iloc[0]['date']
@@ -237,11 +280,16 @@ def black_scholes_pricer_entire_chain_vol(option_chain):
         option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma_vol')] = black_scholes_dict['sigma']
     return option_chain
 
-def visualize_impl_vs_real(option_chain):
+def visualize_impl_vs_ideal(option_chain:pd.DataFrame):
+    '''
+    Visualize the implied vol vs ideal vol...
+        Ideal Vol: The minimum volatility required in order to reach a particular options Strike.
+        Realized Vol: The current volatility over the past (x) days of the underlying used as input to Black Scholes Model.
+    '''
     option_chain = black_scholes_pricer_entire_chain(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
 
-    plt.title(f'{ticker} Impl. Vol. vs. Real Vol. - [Volatility To Reach Strike]')
+    plt.title(f'{ticker} Impl. Vol. vs. Ideal Vol. - [Volatility To Reach Strike]')
 
     call_or_put = option_chain.iloc[0]['call_or_put']
     if call_or_put == 'CALL':
@@ -262,7 +310,12 @@ def visualize_impl_vs_real(option_chain):
     ax.set_facecolor("black")
     plt.show()
 
-def visualize_impl_vs_real_vol(option_chain):
+def visualize_impl_vs_real_vol(option_chain:pd.DataFrame):
+    '''
+    Visualize the implied vol vs real vol...
+        Implied Vol: What the Options Implied Volatility is in the market.
+        Realized Vol: The current volatility over the past (x) days of the underlying used as input to Black Scholes Model.
+    '''
     option_chain = black_scholes_pricer_entire_chain_vol(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
 
@@ -287,7 +340,13 @@ def visualize_impl_vs_real_vol(option_chain):
     ax.set_facecolor("black")
     plt.show()
 
-def visualize_impl_vs_real_combined(option_chain):
+def visualize_impl_vs_real_combined(option_chain:pd.DataFrame):
+    '''
+    Visualize the implied vol vs real vol vs ideal vol...
+        Implied Vol: What the Options Implied Volatility is in the market.
+        Ideal Vol: The minimum volatility required in order to reach a particular options Strike.
+        Realized Vol: The current volatility over the past (x) days of the underlying used as input to Black Scholes Model.
+    '''
     option_chain = black_scholes_pricer_entire_chain_vol(option_chain)
     option_chain = black_scholes_pricer_entire_chain(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
