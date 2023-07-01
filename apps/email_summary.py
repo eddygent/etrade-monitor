@@ -70,8 +70,12 @@ def account_summary(AccountsObj):
         cum_total_buy += acc.buying_power
         # acc_info += f"<b>{ACC_TYPE[acc.accountName]} Account:</b> {acc.accountName} | <b>Account Value:</b> {format_currency(acc.account_value)}  - <b>Buying Power:</b> {format_currency(acc.buying_power)}<br>"
         # s += f"<b>Total Assets:</b> {format_currency(cum_total_val)} | <b>Cumulative Immediate Buying Power:</b> {format_currency(cum_total_buy)}<br>{acc_info}<br><br>"
-        acc_type.append(ACC_TYPE[acc.accountName])
-        acc_name.append(acc.accountName)
+        try:
+            acc_type.append(ACC_TYPE[acc.accountName])
+            acc_name.append(acc.accountName)
+        except KeyError:
+            acc_type.append(ACC_TYPE[acc.accountDescription])
+            acc_name.append(acc.accountDescription)
         acc_value.append(format_currency(acc.account_value))
         acc_buying_power.append(format_currency(acc.buying_power))
     acc_type.append("Cumulative")
@@ -83,9 +87,9 @@ def account_summary(AccountsObj):
     df = df.reset_index(drop=True)
     return s + build_table(df,'blue_light')
 
-def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.email,
+def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
                          receiver_email=etrade_config.receiver_email):
-    receiver_email = ",".join(receiver_email)
+
 
     # Create a multipart message and set headers
     message = MIMEMultipart()
@@ -103,9 +107,9 @@ def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", send
     message.attach(MIMEText(body, "html"))
 
     text = message.as_string()
-    # Log in to server using secure context and send email
-    context = ssl.create_default_context()
+    # Log in to server using secure context and send email - TODO: make ssl optional
+    context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, etrade_config.password)
+        server.login(sender_email, etrade_config.email_password)
         server.sendmail(sender_email, receiver_email, text)
     return True

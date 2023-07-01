@@ -24,8 +24,8 @@ import etrade_config
 import apps.volatility
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
 from apps.volatility_strategies import *
-from apps.sentiment_analysis import *
-from apps.firebase_administrator import *
+#from apps.sentiment_analysis import *
+#from apps.firebase_administrator import *
 from apps.black_scholes_model import *
 
 import os

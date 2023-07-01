@@ -4,3 +4,4 @@ config.ini
 data/voldata/volatility_scanner_result*
 assets/*.json
 lxml*
+venv/*

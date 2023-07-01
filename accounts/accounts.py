@@ -268,6 +268,7 @@ class Accounts:
         else:
             # Handle errors
             logger.debug("Response Body: %s", response.text)
+            print(response.headers)
             if response is not None and response.headers['Content-Type'] == 'application/json' \
                     and "Error" in response.json() and "message" in response.json()["Error"] \
                     and response.json()["Error"]["message"] is not None:

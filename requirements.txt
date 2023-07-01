@@ -1,4 +1,7 @@
-appdirs==1.4.4
+rauth
+requests
+altgraph
+appdirs
 Babel==2.12.1
 beautifulsoup4==4.12.2
 certifi==2023.5.7
@@ -6,11 +9,13 @@ cffi==1.15.1
 charset-normalizer==3.1.0
 cryptography==40.0.2
 frozendict==2.3.8
+future
 html5lib==1.1
 idna==3.4
 inputimeout==1.0.4
 jxmlease==1.0.3
 lxml==4.9.2
+macholib 
 multitasking==0.0.11
 numpy==1.24.3
 pandas==2.0.1
@@ -20,13 +25,9 @@ python-dateutil==2.8.2
 pytz==2023.3
 rauth==0.7.3
 requests==2.29.0
-scipy==1.10.1
-six==1.16.0
+six 
 soupsieve==2.4.1
 tzdata==2023.3
 urllib3==1.26.15
 webencodings==0.5.1
-xmltodict==0.13.0
-yahoofinancials==1.14
 yfinance==0.2.18
-yoptions==0.0.4
