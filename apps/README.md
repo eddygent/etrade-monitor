@@ -14,9 +14,9 @@ Haphazardly put together "applications" that I use for different reasons. I have
 
 ## ToDo
 - Fair Pricer for Stocks (High, Unknown Difficulty)
-- Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty)
-- Volatility of Stock Since its purchase (Medium, 3 Difficulty)
-- Mispriced Option (overpriced, underpriced, how to correct) (Medium, 1 Difficulty)
+- Regression Analysis on Financial Statements against Expected Growth/Subtraction due to earnings (Medium, 13 Difficulty) - RG
+- Volatility of Stock Since its purchase (Medium, 3 Difficulty) - MT
+- Mispriced Option (overpriced, underpriced, how to correct) (Medium, 1 Difficulty) - MT
 - Delta Calculation (High, 3 Difficulty)
 - Hedge Ratio (Medium, 1 Difficulty) **_Contingent on Delta Calculation_**
 

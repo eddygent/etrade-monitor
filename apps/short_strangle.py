@@ -1,0 +1,112 @@
+
+from yop import *
+
+def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
+    '''
+    short a call and short a put atm + vol/vol_factor given time period
+    '''
+    # sell a put
+    if put_chain.empty:
+        put_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='p', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    short_put_contract = put_chain.head(1) # itm put
+    # sell a call
+    if call_chain.empty:
+        call_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    short_call_contract = call_chain.tail(1) # itm call
+    # combine positions
+    short_strangle_vol_position = pd.concat([short_put_contract, short_call_contract]) # position dataframe
+
+    spc = short_put_contract.head(1)
+    scc = short_call_contract.head(1)
+
+    _spc = spc.iloc[0]
+    _scc = scc.iloc[0]
+    method = BID if float(_spc[BID]) != 0 else LP
+
+    max_credit = float(_scc[method]) + float(_spc[method])
+    break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
+
+    return short_strangle_vol_position, break_even_range, max_credit
+
+def short_strangle_vol_skewed_up(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
+    '''
+    short a call and short a put [skewed up] with atm put and (itm call + vol/vol_factor) given time period
+    '''
+    # sell a put
+    if put_chain.empty:
+        put_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='p', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    mid = int(put_chain.shape[0]/2)
+    short_put_contract = put_chain.iloc[mid:mid+1] # atm put - double check method
+
+    # sell a call
+    if call_chain.empty:
+        call_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    short_call_contract = call_chain.tail(1) # itm call
+    # combine positions
+    short_strangle_vol_position = pd.concat([short_put_contract, short_call_contract]) # position dataframe
+
+    _spc = short_put_contract.iloc[0]
+    _scc = short_call_contract.iloc[0]
+    method = BID if float(_spc[BID]) != 0 else LP
+
+    max_credit = float(_scc[method]) + float(_spc[method])
+    break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
+
+    return short_strangle_vol_position, break_even_range, max_credit
+
+def short_strangle_vol_skewed_down(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
+    '''
+    short a call and short a put [skewed down] with atm call and (atm call - vol/vol_factor) given time period
+    '''
+    # sell a put
+    if put_chain.empty:
+        put_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='p', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    short_put_contract = put_chain.head(1)
+
+    # sell a call
+    if call_chain.empty:
+        call_chain = get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=days, vol_factor=vol_factor, time_period_adj=time_period_adj)
+    mid = int(call_chain.shape[0] / 2)
+    short_call_contract = call_chain.iloc[mid:mid+1] # atm put - double check method
+
+    # combine positions
+    short_strangle_vol_position = pd.concat([short_put_contract, short_call_contract]) # position dataframe
+
+    _spc = short_put_contract.iloc[0]
+    _scc = short_call_contract.iloc[0]
+    method = BID if float(_spc[BID]) != 0 else LP
+
+    max_credit = float(_scc[method]) + float(_spc[method])
+    break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
+
+    return short_strangle_vol_position, break_even_range, max_credit
+
+
+def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=0, vol_factor = 2, time_period_adj = 30):
+    '''
+    ticker:     Ticker of the underlying
+    call_or_put:    'c' for call and 'p' for put
+    days:   how many days until expiration
+    vol_factor:     what is the volatility factor that you want to use?
+        ex...   if vol is at 8%, and curr price is at 100, we will grab the strikes 8/vol_factor (2) 4% up (104), and 4% down.
+        note:   for more sensitive volatilities we will use a lower vol factor. for less sensitive use a higher vol factor
+    time_period_adj:    how many extra days do we want to go out? by default if we pass in an expiry 30days out, we will get
+        volatility back (30 days + time_period_adj (10)) = 40 days out
+    '''
+    # this function will get options within the volatility measure of strike price, given time in days
+    _time_period = f'{days+time_period_adj}d'
+    chain = get_friday_options_chain_for_ticker_date(ticker, call_or_put, days )
+    _,vol,curr_price,_ = volatility.ticker_volatility_matrix_with_time_period(ticker, _time_period)
+    adj_vol = vol / vol_factor
+    ranged_with_vol = chain[chain['Strike'].between((1-adj_vol)*curr_price, curr_price*(1+adj_vol))]
+    (f'Volatility range of {days+time_period_adj} days is: {vol}, with adjusted volatility of: {adj_vol}.')
+    ranged_with_vol = ranged_with_vol.reset_index(drop=True)
+    return ranged_with_vol
+
+
+def main():
+    ticker = 'AAPL'
+    print(short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()))
+
+if __name__ == '__main__':
+    main()
