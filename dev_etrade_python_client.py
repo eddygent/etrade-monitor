@@ -4,7 +4,6 @@
 # Created Date: 20/05/2023
 # Email       : kori.s.vernon@gmail.com
 # ---------------------------------------------------------------------------
-"""This Python script provides examples on using the E*TRADE API endpoints"""
 import socket
 import datetime
 import webbrowser

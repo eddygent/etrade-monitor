@@ -1,4 +1,9 @@
-
+#!/usr/bin/python3
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 04/07/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 from yop import *
 from volatility import TODAY, tick_vol_runner
 import pprint

@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+# ----------------------------------------------------------------------------
+# Created By  : Kori Vernon
+# Created Date: 04/07/2023
+# Email       : kori.s.vernon@gmail.com
+# ---------------------------------------------------------------------------
 import math
 from datetime import datetime, timedelta
 import os
