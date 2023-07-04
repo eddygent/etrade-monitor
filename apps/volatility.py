@@ -274,6 +274,13 @@ def ticker_volatility_matrix_with_time_period_plt_stock(ticker, time_period="3mo
 
     return fig
 
+
+
+def main():
+    pass
+
+if __name__ == '__main__':
+    main()
 # perf_fig = ticker_volatility_matrix_with_time_period_plt_stock("T", time_period="3mo")
 # gmail.send(
 #             subject=f"test",

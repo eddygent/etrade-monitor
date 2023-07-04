@@ -1,6 +1,7 @@
 
 from yop import *
-
+from volatility import TODAY, tick_vol_runner
+import pprint
 def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
     '''
     short a call and short a put atm + vol/vol_factor given time period
@@ -26,7 +27,14 @@ def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj =
     max_credit = float(_scc[method]) + float(_spc[method])
     break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
 
-    return short_strangle_vol_position, break_even_range, max_credit
+    pos = {
+        "position_df": short_strangle_vol_position,
+        "break_even_range": break_even_range,
+        "max_credit": max_credit,
+        "max_profit": max_credit * 100,
+        "entry_cost": (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+    }
+    return pos
 
 def short_strangle_vol_skewed_up(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
     '''
@@ -52,7 +60,14 @@ def short_strangle_vol_skewed_up(ticker, days=0, vol_factor = 2, time_period_adj
     max_credit = float(_scc[method]) + float(_spc[method])
     break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
 
-    return short_strangle_vol_position, break_even_range, max_credit
+    pos = {
+        "position_df": short_strangle_vol_position,
+        "break_even_range": break_even_range,
+        "max_credit": max_credit,
+        "max_profit": max_credit * 100,
+        "entry_cost": (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+    }
+    return pos
 
 def short_strangle_vol_skewed_down(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):
     '''
@@ -79,7 +94,16 @@ def short_strangle_vol_skewed_down(ticker, days=0, vol_factor = 2, time_period_a
     max_credit = float(_scc[method]) + float(_spc[method])
     break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
 
-    return short_strangle_vol_position, break_even_range, max_credit
+
+
+    pos = {
+        "position_df": short_strangle_vol_position,
+        "break_even_range": break_even_range,
+        "max_credit": max_credit,
+        "max_profit": max_credit * 100,
+        "entry_cost": (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+    }
+    return pos
 
 
 def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', days=0, vol_factor = 2, time_period_adj = 30):
@@ -103,10 +127,22 @@ def get_options_chain_within_vol_of_strike_given_time(ticker, call_or_put='c', d
     ranged_with_vol = ranged_with_vol.reset_index(drop=True)
     return ranged_with_vol
 
+def low_vol(date=TODAY, volatility_less_than = .1, volume_more_than=10000000):
+    df = tick_vol_runner(time_period='3mo', date=date, test=True)
+    low_vol = df.query(f"volatility < {volatility_less_than} & avgVolume > {volume_more_than}")
+    return low_vol
+
+def iterate_through_low_vol(date=TODAY):
+    low_vol_df = low_vol(date)
+    short_strangles = {}
+    for index, row in low_vol_df.iterrows():
+        short_strangles[row['ticker']] = short_strangle_vol_neutral(row['ticker'], days=30, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame())
+        short_strangles[row['ticker']]['volatility'] = row['volatility']
+    return short_strangles
 
 def main():
-    ticker = 'AAPL'
-    print(short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()))
-
+    # ticker = 'KMI'
+    # print(short_strangle_vol_neutral(ticker, days=30, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()))
+    pprint.pprint(iterate_through_low_vol())
 if __name__ == '__main__':
     main()
