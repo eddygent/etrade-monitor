@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 from redmail import gmail
 gmail.username = etrade_config.sender_email
-gmail.password = etrade_config.password
+gmail.password = etrade_config.email_password
 
 def american_black_scholes_price(S, K, r, T, sigma):
     """
