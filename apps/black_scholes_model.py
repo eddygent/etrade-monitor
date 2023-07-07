@@ -23,7 +23,7 @@ from yop import get_friday_option_for_ticker_date_closest_to_price, get_friday_o
 import matplotlib.pyplot as plt
 
 from redmail import gmail
-gmail.username = etrade_config.email
+gmail.username = etrade_config.sender_email
 gmail.password = etrade_config.password
 
 def american_black_scholes_price(S, K, r, T, sigma):

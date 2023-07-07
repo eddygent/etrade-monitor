@@ -15,17 +15,25 @@ import requests
 from rauth import OAuth1Service
 from logging.handlers import RotatingFileHandler
 from accounts.accounts import Accounts
+
 from market.market import Market
 import time
 import argparse
 from inputimeout import inputimeout, TimeoutOccurred
 import etrade_config
+import os
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + "/apps")
 import apps.volatility
+from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
 from apps.volatility_strategies import *
 #from apps.sentiment_analysis import *
 #from apps.firebase_administrator import *
 from apps.black_scholes_model import *
+
+script_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_path + "/apps")
 
 import os
 base = os.getcwd()
@@ -276,8 +284,8 @@ def black_scholes_input(blackScholesPricer):
 
         gmail.send(
             subject=f"{ticker} Ideal vs. Implied vs. Real Volatility",
-            sender=f"{etrade_config.email}",
-            receivers=[f"{etrade_config.email}"],
+            sender=f"{etrade_config.sender_email}",
+            receivers=[f"{etrade_config.sender_email}"],
 
             # A plot in body
             html=f"""
@@ -305,8 +313,8 @@ def black_scholes_input(blackScholesPricer):
     else:
         gmail.send(
             subject=f"{ticker} Ideal vs. Implied vs. Real Volatility",
-            sender=f"{etrade_config.email}",
-            receivers=[f"{etrade_config.email}"],
+            sender=f"{etrade_config.sender_email}",
+            receivers=[f"{etrade_config.sender_email}"],
 
             # A plot in body
             html=f"""

@@ -24,6 +24,10 @@ from helper import format_currency
 
 from pretty_html_table import build_table
 import pandas as pd
+from redmail import gmail
+
+gmail.username = etrade_config.sender_email
+gmail.password = etrade_config.password
 
 def get_accounts_hold(AccountsObj):
     s = "<h1>Account 30 Day Holding Monitor --</h1>"
@@ -94,22 +98,44 @@ def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", send
     # Create a multipart message and set headers
     message = MIMEMultipart()
     message["From"] = sender_email
-    message["To"] = receiver_email
+    message["To"] = ", ".join(receiver_email)
     message["Subject"] = subject
-    message["Bcc"] = receiver_email  # Recommended for mass emails
-
+    message["Bcc"] = ", ".join(receiver_email)  # Recommended for mass emails
     body = str(contents)
-
     print("SENDING EMAIL WITH THE FOLLOWING")
     print(body)
-
     # Add body to email
     message.attach(MIMEText(body, "html"))
-
     text = message.as_string()
     # Log in to server using secure context and send email - TODO: make ssl optional
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, etrade_config.email_password)
+        server.login(sender_email, etrade_config.password)
         server.sendmail(sender_email, receiver_email, text)
     return True
+
+def _send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
+                         receiver_email=etrade_config.receiver_email):
+    '''
+    Not working for some reason. to be fixed at a later time
+    '''
+    body = str(contents)
+    print(body)
+    gmail.send(
+        subject=f"{subject}",
+        sender=f"{sender_email}",
+        receivers=[f"{receiver_email}"],
+        html=f"""{body}"""
+    )
+    return True
+
+def main():
+    gmail.send(
+        subject="hi",
+        sender=etrade_config.sender_email,
+        receivers=[etrade_config.receiver_email],
+        html="hi"
+    )
+
+if __name__ == '__main__':
+    main()
