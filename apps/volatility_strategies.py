@@ -7,14 +7,11 @@
 import os
 import sys
 
-import pandas as pd
-
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path)
 from volatility import *
 from options_helper import *
 from pretty_html_table import build_table
-from email_summary import send_email_with_data
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(script_path, ".."))
 import etrade_config
