@@ -22,7 +22,7 @@ sys.path.insert(0, script_path + '/../')
 import etrade_config
 
 gmail.username = etrade_config.sender_email
-gmail.password = etrade_config.password
+gmail.password = etrade_config.email_password
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH =  script_path + '/../data'

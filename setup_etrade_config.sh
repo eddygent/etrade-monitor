@@ -1,7 +1,7 @@
 echo "Creating etrade_config.py file!"
 
 echo "sender_email = 'your.email@website.com'" > etrade_config.py
-echo "password = 'your_password'" >> etrade_config.py
+echo "email_password = 'your_password'" >> etrade_config.py
 # I have multiple etrade accounts so this is helpful to segregate
 echo "ACC_TYPE = { '<ACCOUNT NICKNAME IN ETRADE>': '<ACCOUNT FUNCTION>','stonks': 'Investing'}" >> etrade_config.py
 echo "CONSUMER_KEY = 'YOUR CONSUMER KEY'" >> etrade_config.py

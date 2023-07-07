@@ -15,6 +15,7 @@ import requests
 from rauth import OAuth1Service
 from logging.handlers import RotatingFileHandler
 from accounts.accounts import Accounts
+# from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
 
 from market.market import Market
 import time
@@ -25,7 +26,7 @@ import os
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path + "/apps")
 import apps.volatility
-#from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
+from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell,vol_surface_summary,send_email_with_images
 from apps.volatility_strategies import *
 #from apps.sentiment_analysis import *
@@ -187,6 +188,7 @@ def vol_surface_email(vol_args):
     @return:
     """
     logging.info(f"vol_surface_email(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
+    print(vol_args)
     ticker, days_out  = vol_args.split(",")
     if days_out == "":
         days_out = 30
@@ -234,10 +236,9 @@ def snap_and_email_risk(AccountsObj):
     @param AccountsObj:
     @return:
     """
-    """
-   for acc in AccountsObj.accounts:
-       holdings = AccountsObj.accounts_holdings[acc.accountId]
-       print(holdings)
+    for acc in AccountsObj.accounts:
+        holdings = AccountsObj.accounts_holdings[acc.accountId]
+        print(holdings)
 
 
 def email_volatility(vol_args):

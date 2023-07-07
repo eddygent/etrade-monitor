@@ -28,7 +28,7 @@ import pandas as pd
 from redmail import gmail
 
 gmail.username = etrade_config.sender_email
-gmail.password = etrade_config.password
+gmail.password = etrade_config.email_password
 
 def get_accounts_hold(AccountsObj):
     s = "<h1>Account 30 Day Holding Monitor --</h1>"
