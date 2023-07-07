@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
 import time
+import math
 import volatility
 
 # Chain of all FORD MOTOR COMPANY call options for next expiration date
@@ -61,7 +62,7 @@ def _get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' 
         return pd.DataFrame()
     return chain
 
-def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
+def get_chain_ticker_date(stock_ticker,option_type, expiration_date,week=None):
     '''
     get the chain for either calls or puts using yfinance.Ticker.option_chain lib and return for usage
     '''
@@ -76,11 +77,15 @@ def get_chain_ticker_date(stock_ticker,option_type, expiration_date):
     #     get_chain_ticker_date(stock_ticker, option_type, add_7.strftime("%Y-%m-%d"))
     if option_type == 'c':
         opt = opt.calls
-    else:
+    elif option_type == 'p':
         opt = opt.puts
+    elif option_type == '*':
+        opt = pd.concat([opt.puts,opt.calls])
+    if week!=None:
+        opt['Week'] = week
     return opt
 
-def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0):
+def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0, inclusive=False):
     '''
     Get the friday options chain given a ticker and date
 
@@ -89,7 +94,12 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
     start = time.time()
     try:
         print(f'Trying to get the options chain for: {ticker}.')
-        chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
+        if not inclusive:
+            chain = get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(days, True))
+        else:
+            chain = pd.DataFrame()
+            for week in range(0,int(math.ceil(days/7))+1):
+                chain = pd.concat([chain,get_chain_ticker_date(ticker, call_or_put, expiration_date=friday_after_days_out(week*7, True),week=week)])
         if chain.empty:
             print(f"Error getting expiration date {friday_after_days_out(days, True)} for ticker: {ticker}, moving the days forward...")
             if tries == 14:
@@ -97,14 +107,18 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
                 print(f"Returning Empty Dataframe.")
                 return pd.DataFrame()
             chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put=call_or_put, days=days+7, tries=tries+1)
-        print(f'Getting {"Call" if call_or_put == "c" else "Put"} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
+        all_opts_str = f'{"Put" if call_or_put == "p" else "All"}'
+        print(f'Getting {"Call" if call_or_put == "c" else all_opts_str} Options Chain {friday_after_days_out(days, True)} days out for {ticker} took {time.time()-start} seconds.')
     except ValueError:
         print(f"Error getting the chain for: {ticker}")
         print(f"Returning Empty Dataframe.")
         return pd.DataFrame()
     # rename columns to match that of the previous
     try:
-        chain = chain.rename(columns={'lastPrice': 'Last Price', 'bid': 'Bid','ask':'Ask', 'volume':'Volume', 'openInterest': 'Open Interest', 'contractSymbol':'Symbol', 'impliedVolatility': 'Implied Volatility', 'lastTradeDate':'Last Trade', 'strike':'Strike'})
+        if not inclusive:
+            chain = chain.rename(columns={'lastPrice': 'Last Price', 'bid': 'Bid','ask':'Ask', 'volume':'Volume', 'openInterest': 'Open Interest', 'contractSymbol':'Symbol', 'impliedVolatility': 'Implied Volatility', 'lastTradeDate':'Last Trade', 'strike':'Strike'})
+        else:
+            chain = chain.rename(columns={'Week':'Expiry Weeks Out','lastPrice': 'Last Price', 'bid': 'Bid','ask':'Ask', 'volume':'Volume', 'openInterest': 'Open Interest', 'contractSymbol':'Symbol', 'impliedVolatility': 'Implied Volatility', 'lastTradeDate':'Last Trade', 'strike':'Strike'})
     except Exception as e:
         print(f"In the original Form: {chain.columns}")
     chain['date'] = friday_after_days_out(days, True)

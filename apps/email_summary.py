@@ -10,6 +10,7 @@ import locale
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 
 import os
@@ -91,6 +92,41 @@ def account_summary(AccountsObj):
     df = df.reset_index(drop=True)
     return s + build_table(df,'blue_light')
 
+def vol_surface_summary(tickers):
+    s = "<h1>Vol Surface Plots--</h1>"
+    s += f"See attached plots of impl. vol vs strike/exp for {','.join(tickers)}"
+    return s
+
+def send_email_with_images(images,contents,subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
+                         receiver_email=etrade_config.receiver_email):
+    # Create a multipart message and set headers
+
+    message = MIMEMultipart()
+    for image in images:
+        with open(image, 'rb') as f:
+            img_data = f.read()
+            image = MIMEImage(img_data, name=os.path.basename(image))
+            message.attach(image)
+    message["From"] = sender_email
+    message["To"] = ", ".join(receiver_email)
+    message["Subject"] = subject
+    message["Bcc"] = ", ".join(receiver_email)  # Recommended for mass emails
+    body = str(contents)
+    print("SENDING EMAIL WITH THE FOLLOWING")
+    print(body)
+    # Add body to email
+    message.attach(MIMEText(body, "html"))
+    text = message.as_string()
+    # Log in to server using secure context and send email - TODO: make ssl optional
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+        server.login(sender_email, etrade_config.email_password)
+        server.sendmail(sender_email, receiver_email, text)
+    return True
+
+
+
+
 def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
                          receiver_email=etrade_config.receiver_email):
 
@@ -110,7 +146,7 @@ def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", send
     # Log in to server using secure context and send email - TODO: make ssl optional
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, etrade_config.password)
+        server.login(sender_email, etrade_config.email_password)
         server.sendmail(sender_email, receiver_email, text)
     return True
 
