@@ -10,6 +10,7 @@ import os
 import sys
 
 import pandas as pd
+import numpy as np
 import yfinance as yf
 from volatility import TODAY, ticker_volatility_matrix_with_time_period_df
 
@@ -18,6 +19,8 @@ sys.path.insert(0, script_path + '/../')
 
 import etrade_config
 RATE = etrade_config.RATE  # Annualized risk free rate
+script_path = os.path.dirname(os.path.abspath(__file__))
+IMG_PATH =  script_path + '/../img'
 from options_helper import get_friday_option_for_ticker_date_closest_to_price, get_friday_options_chain_for_ticker_date
 
 import matplotlib.pyplot as plt
@@ -286,12 +289,47 @@ def black_scholes_pricer_entire_chain_vol(option_chain:pd.DataFrame)-> pd.DataFr
         option_chain.iloc[index, option_chain.columns.get_loc('BS_sigma_vol')] = black_scholes_dict['sigma']
     return option_chain
 
+def visualize_impl_vs_strike_vs_exp(option_chain:pd.DataFrame):
+    '''
+    edwgent - 2023-07-07
+    Plots yf impl. vol for strike and expiry for given ticker
+    @param option_chain:
+    @return:
+    '''
+    fig=plt.figure()
+    calls = option_chain[option_chain['Symbol'].str.match('.*[0-9]C')]
+    puts = option_chain[option_chain['Symbol'].str.match('.*[0-9]P')]
+    ax = fig.add_subplot(projection='3d')
+    call_vol = calls['Implied Volatility']
+    put_vol = puts['Implied Volatility']
+    if len(call_vol) > len(put_vol):
+        call_vol = call_vol[0:len(put_vol)]
+    elif len(put_vol) > len(call_vol):
+        put_vol = put_vol[0:len(call_vol)]
+    strikes = calls['Strike'][0:len(call_vol)]
+    ticker = option_chain.iloc[0]['Underlying']
+    expiries = calls['Expiry Weeks Out'][0:len(call_vol)]
+    ax.scatter3D( strikes, expiries,call_vol ,edgecolor='royalblue',linewidths=1, alpha=.7,
+           s = 50,
+           c='blue',label='Calls')
+    ax.scatter3D(strikes,expiries,put_vol, edgecolor='red', linewidths=1,alpha=.7,s=50,c='red',label='Puts')
+    ax.set(
+              xlabel='Strike', ylabel='Expiry Weeks Out from Today', zlabel='Impl. Vol')
+    plt.xlabel('Strike')
+    plt.ylabel('Expiry Weeks Out')
+    plt.title(f'Vol surface - {ticker}')
+    ax.legend(loc='upper right')
+    fig.savefig(f'{IMG_PATH}/vol_surface_{ticker}_{datetime.now().strftime("%Y%m%d")}')
+    return f'{IMG_PATH}/vol_surface_{ticker}_{datetime.now().strftime("%Y%m%d")}.png'
+
 def visualize_impl_vs_ideal(option_chain:pd.DataFrame):
     '''
     Visualize the implied vol vs ideal vol...
         Ideal Vol: The minimum volatility required in order to reach a particular options Strike.
         Realized Vol: The current volatility over the past (x) days of the underlying used as input to Black Scholes Model.
     '''
+
+
     option_chain = black_scholes_pricer_entire_chain(option_chain)
     ticker = option_chain.iloc[0]['Underlying']
 

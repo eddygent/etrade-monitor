@@ -25,8 +25,8 @@ import os
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path + "/apps")
 import apps.volatility
-from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
-from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
+#from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
+from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell,vol_surface_summary,send_email_with_images
 from apps.volatility_strategies import *
 #from apps.sentiment_analysis import *
 #from apps.firebase_administrator import *
@@ -180,6 +180,27 @@ def process_input(inp, session, base_url, accounts):
     elif inp.upper() == "E":
         exit()
 
+def vol_surface_email(vol_args):
+    """
+    edwgent - 2023-07-07
+    @param vol_args:
+    @return:
+    """
+    logging.info(f"vol_surface_email(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
+    ticker, days_out  = vol_args.split(",")
+    if days_out == "":
+        days_out = 30
+    else:
+        days_out = int(days_out)
+    if ticker == '*':
+        pass
+    else:
+        opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put='*', days=days_out,tries=0,inclusive=True)
+    img_path = visualize_impl_vs_strike_vs_exp(opt_chain)
+    msg = vol_surface_summary([ticker])
+    send_email_with_images([img_path],msg, subject=f"EMon: Volatility Surface Report - {','.join(ticker) if type(ticker) == list else ticker} - {datetime.now()}",
+    receiver_email=etrade_config.receiver_email)
+
 def vol_outliers_email(date):
     logging.info(f"vol_outliers_email({date}) @ {datetime.now()} on host: {socket.gethostname()}")
     try:
@@ -206,6 +227,19 @@ def start_session():
     accounts = load_accounts(session, base_url)
     return session, accounts, base_url
 
+
+def snap_and_email_risk(AccountsObj):
+    """
+    edwgent - 2023-07-07
+    @param AccountsObj:
+    @return:
+    """
+    """
+   for acc in AccountsObj.accounts:
+       holdings = AccountsObj.accounts_holdings[acc.accountId]
+       print(holdings)
+
+
 def email_volatility(vol_args):
     logging.info(f"email_volatility(vol_args={vol_args}) @ {datetime.now()} on host: {socket.gethostname()}")
     symbols, vol, time_period, gt, price, volume, emailwho = vol_args.split(",")
@@ -216,7 +250,6 @@ def email_volatility(vol_args):
     subj = f"EMon: Volatility & Price Scraper"
     body = f"Parameters: Volatility: {vol}, Time Period: {time_period}, Price: {price}.<br>"
     vol_table,count,seconds = apps.volatility.volatility_scanner(symbols,vol,time_period, price=price,to_csv=True,to_html=True,volume=volume, gt =gt)
-
     body += f"Query Took {seconds} seconds across {count} symbol(s)."
     body += vol_table
     emails = []
@@ -397,10 +430,14 @@ if __name__ == "__main__":
 
     parser.add_argument("-vs","--volatilityScanner",help="Scan for market volatility", type=str,const="*,.3,3mo,G,0,0,me", nargs='?')
 
+    parser.add_argument("-r","--Risk",help="Snap risk and email out for all accounts", action='store_true')
+
     parser.add_argument("-bsp", "--blackScholesPricer", help="BlackScholesPricer - input is 'TICKER,TARGET PRICE, 'c' for call, and 'p' for put',days out,'l' for long and 's' for short", type=str, const='take input', nargs='?')
 
+    parser.add_argument("-ss", "--stockStats", help="Get stock stats - incl vol surface, income statement, events for stocks given - input is 'TICKER,days out - leave TICKER as * to only fetch highest vol tickers", type=str, const='take input', nargs='?')
+
     args = parser.parse_args()
-    if args.Email or args.canSell or args.StayLive:
+    if args.Email or args.canSell or args.StayLive or args.Risk:
         session, base_url = oauth()
         accounts = load_accounts(session, base_url)
 
@@ -408,6 +445,10 @@ if __name__ == "__main__":
     if args.blackScholesPricer:
         # add strike
         black_scholes_input(args.blackScholesPricer)
+    if args.stockStats:
+        vol_surface_email(args.stockStats)
+    if args.Risk:
+        snap_and_email_risk(accounts)
     if args.volatilityScanner:
         email_volatility(args.volatilityScanner)
     if args.sentimentAnalysis:
