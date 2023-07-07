@@ -48,7 +48,7 @@ It will look something like this:
 ![emon sentiment analysis email](../img/sentiment-analysis-email.png?raw=true "Title")
 
 ## Options Volatility Screener
-**Relevant File(s):** `volatility.py`,`volatility_strategies.py`,`yop.py`
+**Relevant File(s):** `volatility.py`,`volatility_strategies.py`,`options_helper.py`
 
 **Relevant Function(s):** 
 

@@ -4,7 +4,7 @@
 # Created Date: 04/07/2023
 # Email       : kori.s.vernon@gmail.com
 # ---------------------------------------------------------------------------
-from yop import *
+from options_helper import *
 from volatility import TODAY, tick_vol_runner
 import pprint
 def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj = 30, put_chain=pd.DataFrame(), call_chain=pd.DataFrame()):

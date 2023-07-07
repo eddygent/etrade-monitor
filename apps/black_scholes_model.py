@@ -18,7 +18,7 @@ sys.path.insert(0, script_path + '/../')
 
 import etrade_config
 RATE = etrade_config.RATE  # Annualized risk free rate
-from yop import get_friday_option_for_ticker_date_closest_to_price, get_friday_options_chain_for_ticker_date
+from options_helper import get_friday_option_for_ticker_date_closest_to_price, get_friday_options_chain_for_ticker_date
 
 import matplotlib.pyplot as plt
 
