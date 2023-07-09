@@ -45,7 +45,8 @@ def short_strangle_vol_neutral(ticker, days=0, vol_factor = 2, time_period_adj =
         "max_profit": max_credit * 100,
         "profit_to_investment_ratio": profit_to_investment_ratio,
         "hypothetical_annualized_profit": year_dte_ratio*profit_to_investment_ratio ,
-        "entry_cost": entry_cost
+        "entry_cost": entry_cost,
+        "dte": days_to_expiry
     }
     return pos
 
@@ -86,7 +87,8 @@ def short_strangle_vol_skewed_up(ticker, days=0, vol_factor = 2, time_period_adj
         "max_profit": max_credit * 100,
         "profit_to_investment_ratio": profit_to_investment_ratio,
         "hypothetical_annualized_profit": year_dte_ratio * profit_to_investment_ratio,
-        "entry_cost": entry_cost
+        "entry_cost": entry_cost,
+        "dte": days_to_expiry
     }
     return pos
 
@@ -128,7 +130,8 @@ def short_strangle_vol_skewed_down(ticker, days=0, vol_factor = 2, time_period_a
         "max_profit": max_credit * 100,
         "profit_to_investment_ratio": profit_to_investment_ratio,
         "hypothetical_annualized_profit": year_dte_ratio * profit_to_investment_ratio,
-        "entry_cost": entry_cost
+        "entry_cost": entry_cost,
+        "dte": days_to_expiry
     }
     return pos
 
