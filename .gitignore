@@ -5,3 +5,5 @@ data/voldata/volatility_scanner_result*
 assets/*.json
 lxml*
 venv/*
+vol_surface_*.png
+generated_positions*

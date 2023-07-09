@@ -9,7 +9,7 @@ import pandas as pd
 import yfinance as yf
 import time
 import math
-import volatility
+TODAY = datetime.now().strftime("%Y-%m-%d")
 
 # Chain of all FORD MOTOR COMPANY call options for next expiration date
 # chain = yo.get_chain_greeks(stock_ticker='TSLA', dividend_yield=0, option_type='c', risk_free_rate=None)
@@ -121,7 +121,9 @@ def get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' ,
             chain = chain.rename(columns={'Week':'Expiry Weeks Out','lastPrice': 'Last Price', 'bid': 'Bid','ask':'Ask', 'volume':'Volume', 'openInterest': 'Open Interest', 'contractSymbol':'Symbol', 'impliedVolatility': 'Implied Volatility', 'lastTradeDate':'Last Trade', 'strike':'Strike'})
     except Exception as e:
         print(f"In the original Form: {chain.columns}")
-    chain['date'] = friday_after_days_out(days, True)
+    expiry_date = friday_after_days_out(days, True)
+    chain['date'] = expiry_date
+    chain['dte'] = get_days_away(expiry_date)
     if call_or_put == 'c': chain['call_or_put'] = 'CALL'
     elif call_or_put == 'p':
         chain['call_or_put'] = 'PUT'
@@ -163,6 +165,17 @@ def get_last_price(ticker):
     sym = yf.Ticker(ticker)
     fi = sym.fast_info
     return fi['lastPrice']
+
+def get_days_away(date):
+    if isinstance(date, str):
+        if "-" in date:
+            date = datetime.strptime(date, "%Y-%m-%d")
+        else:
+            date = datetime.strptime(date, "%Y%m%d")
+    today = datetime.strptime(TODAY, "%Y-%m-%d")
+    difference = date - today
+    return difference.days
+
 
 # print(get_friday_options_chain_for_ticker_date(ticker = 'SPY', call_or_put = 'c' , days = 0, tries=0))
 # print(get_friday_option_for_ticker_date_closest_to_price(ticker = 'SPY', price=400, call_or_put = 'c' , days = 0, long=True))
