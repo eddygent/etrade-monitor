@@ -70,15 +70,23 @@ def short_strangle_vol_skewed_up(ticker, days=0, vol_factor = 2, time_period_adj
     _scc = short_call_contract.iloc[0]
     method = BID if float(_spc[BID]) != 0 else LP
 
+    days_to_expiry = _spc["dte"]
+
     max_credit = float(_scc[method]) + float(_spc[method])
     break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
 
+    entry_cost = (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+    profit_to_investment_ratio = (max_credit * 100) / entry_cost
+
+    year_dte_ratio = 365 / days_to_expiry
     pos = {
         "position_df": short_strangle_vol_position,
         "break_even_range": break_even_range,
         "max_credit": max_credit,
         "max_profit": max_credit * 100,
-        "entry_cost": (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+        "profit_to_investment_ratio": profit_to_investment_ratio,
+        "hypothetical_annualized_profit": year_dte_ratio * profit_to_investment_ratio,
+        "entry_cost": entry_cost
     }
     return pos
 
@@ -104,17 +112,23 @@ def short_strangle_vol_skewed_down(ticker, days=0, vol_factor = 2, time_period_a
     _scc = short_call_contract.iloc[0]
     method = BID if float(_spc[BID]) != 0 else LP
 
+    days_to_expiry = _spc["dte"]
+
     max_credit = float(_scc[method]) + float(_spc[method])
     break_even_range = (float(_spc[STRIKE]) - float(_spc[method]), float(_scc[STRIKE]) + float(_scc[method]))
 
+    entry_cost = (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+    profit_to_investment_ratio = (max_credit * 100) / entry_cost
 
-
+    year_dte_ratio = 365 / days_to_expiry
     pos = {
         "position_df": short_strangle_vol_position,
         "break_even_range": break_even_range,
         "max_credit": max_credit,
         "max_profit": max_credit * 100,
-        "entry_cost": (float(_spc[STRIKE]) * 100) + get_last_price(ticker) * 100
+        "profit_to_investment_ratio": profit_to_investment_ratio,
+        "hypothetical_annualized_profit": year_dte_ratio * profit_to_investment_ratio,
+        "entry_cost": entry_cost
     }
     return pos
 
