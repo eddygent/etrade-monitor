@@ -28,7 +28,11 @@ import pandas as pd
 from redmail import gmail
 
 gmail.username = etrade_config.sender_email
+<<<<<<< HEAD
+gmail.password = etrade_config.password
+=======
 gmail.password = etrade_config.email_password
+>>>>>>> 8d7beb3566c506a15e759bb37f69ec75e5195585
 
 def get_accounts_hold(AccountsObj):
     s = "<h1>Account 30 Day Holding Monitor --</h1>"
@@ -92,10 +96,16 @@ def account_summary(AccountsObj):
     df = df.reset_index(drop=True)
     return s + build_table(df,'blue_light')
 
+<<<<<<< HEAD
+def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
+                         receiver_email=etrade_config.receiver_email):
+
+=======
 def vol_surface_summary(tickers):
     s = "<h1>Vol Surface Plots--</h1>"
     s += f"See attached plots of impl. vol vs strike/exp for {','.join(tickers)}"
     return s
+>>>>>>> 8d7beb3566c506a15e759bb37f69ec75e5195585
 
 def send_email_with_images(images,contents,subject="EMon: E*TRADE ACCOUNT SUMMARY", sender_email=etrade_config.sender_email,
                          receiver_email=etrade_config.receiver_email):
@@ -116,6 +126,8 @@ def send_email_with_images(images,contents,subject="EMon: E*TRADE ACCOUNT SUMMAR
     print(body)
     # Add body to email
     message.attach(MIMEText(body, "html"))
+<<<<<<< HEAD
+=======
     text = message.as_string()
     # Log in to server using secure context and send email - TODO: make ssl optional
     context = ssl._create_unverified_context()
@@ -142,11 +154,16 @@ def send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", send
     print(body)
     # Add body to email
     message.attach(MIMEText(body, "html"))
+>>>>>>> 8d7beb3566c506a15e759bb37f69ec75e5195585
     text = message.as_string()
     # Log in to server using secure context and send email - TODO: make ssl optional
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+<<<<<<< Updated upstream
         server.login(sender_email, etrade_config.email_password)
+=======
+        server.login(sender_email, etradse_config.email_password)
+>>>>>>> Stashed changes
         server.sendmail(sender_email, receiver_email, text)
     return True
 
@@ -157,6 +174,7 @@ def _send_email_with_data(contents, subject="EMon: E*TRADE ACCOUNT SUMMARY", sen
     '''
     body = str(contents)
     print(body)
+
     gmail.send(
         subject=f"{subject}",
         sender=f"{sender_email}",

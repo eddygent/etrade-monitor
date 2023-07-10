@@ -15,7 +15,10 @@ import requests
 from rauth import OAuth1Service
 from logging.handlers import RotatingFileHandler
 from accounts.accounts import Accounts
+<<<<<<< HEAD
+=======
 # from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
+>>>>>>> 8d7beb3566c506a15e759bb37f69ec75e5195585
 
 from market.market import Market
 import time
@@ -26,8 +29,16 @@ import os
 script_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_path + "/apps")
 import apps.volatility
+<<<<<<< Updated upstream
 from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
+<<<<<<< HEAD
+=======
+#from apps.sentiment_analysis import scrape_articles_determine_sentiment_and_send_email
+>>>>>>> Stashed changes
+from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell
+=======
 from apps.email_summary import send_email_with_data, get_accounts_hold, account_summary,get_accounts_sell,vol_surface_summary,send_email_with_images
+>>>>>>> 8d7beb3566c506a15e759bb37f69ec75e5195585
 from apps.volatility_strategies import *
 #from apps.sentiment_analysis import *
 #from apps.firebase_administrator import *
@@ -264,6 +275,21 @@ def email_volatility(vol_args):
         logging.debug("Unable to send email.")
         return False
 
+def email_long_straddles(straddle_args):
+    """
+    edwgent - 2023-07-10
+    @param straddle_args:
+    @return:
+    """
+    logging.info(f"email_long_straddles(straddle_args={straddle_args}) @ {datetime.now()} on host: {socket.gethostname()}")
+    symbols,  days,time_period, min_edge, slippage,min_volume  = straddle_args.split(",")
+    if symbols == '*':
+        ticker_list = apps.volatility.get_top_vol_names(time_period)
+    else:
+        ticker_list = [symbols]
+    for ticker in ticker_list:
+        long_straddles = apps.long_straddle.get_long_staddles(ticker,days,min_volume,time_period)
+        opportunistic_straddles = apps.long_straddles.get_opportunistic_long_straddles(long_straddles,min_edge)
 
 def black_scholes_input(blackScholesPricer):
     if blackScholesPricer == 'take input':
