@@ -27,7 +27,7 @@ def get_long_straddles(ticker,  days=0, vol_factor = 2, time_period_adj = 30):
     '''
     # this function will get the long straddle strategies for the given ticker with a g, given time in days
     _time_period = f'{days+time_period_adj}d'
-    chain = get_friday_options_chain_for_ticker_date(ticker, call_or_put, days )
+    chain = get_friday_options_chain_for_ticker_date(ticker, '*', days )
     #TODO: Make sure this spot value is a) mean over days arg and b) need to use forward price for theo value of straddle?
     _,vol,curr_price,_ = volatility.ticker_volatilitymatrix_with_time_period(ticker, _time_period)
     adj_vol = vol/vol_factor

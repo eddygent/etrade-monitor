@@ -206,6 +206,7 @@ def vol_surface_email(vol_args):
     else:
         days_out = int(days_out)
     if ticker == '*':
+        #TODO: get top vol names
         pass
     else:
         opt_chain = get_friday_options_chain_for_ticker_date(ticker=ticker, call_or_put='*', days=days_out,tries=0,inclusive=True)
